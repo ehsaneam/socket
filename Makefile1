@@ -3,21 +3,21 @@ CFLAGS = -Wall -Wextra
 OBJ_DIR = build
 SRC_DIR = sources
 
-all: client #server
+all: client server
 
 client: $(OBJ_DIR)/client.o $(OBJ_DIR)/header_comp.o $(OBJ_DIR)/common.o
 	$(CC) -o $(OBJ_DIR)/client $(CFLAGS) $(OBJ_DIR)/client.o $(OBJ_DIR)/header_comp.o $(OBJ_DIR)/common.o -lrohc
 
-# server: $(OBJ_DIR)/server.o $(OBJ_DIR)/header_comp.o $(OBJ_DIR)/common.o 
-# 	$(CC) -o $(OBJ_DIR)/server $(CFLAGS) $(OBJ_DIR)/server.o $(OBJ_DIR)/header_comp.o $(OBJ_DIR)/common.o -lrohc
+server: $(OBJ_DIR)/server.o $(OBJ_DIR)/header_comp.o $(OBJ_DIR)/common.o 
+	$(CC) -o $(OBJ_DIR)/server $(CFLAGS) $(OBJ_DIR)/server.o $(OBJ_DIR)/header_comp.o $(OBJ_DIR)/common.o -lrohc
 
 $(OBJ_DIR)/client.o: $(SRC_DIR)/client.c
 	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/client.c -o $(OBJ_DIR)/client.o
 
-# $(OBJ_DIR)/server.o: $(SRC_DIR)/server.c
-# 	mkdir -p $(OBJ_DIR)
-# 	$(CC) $(CFLAGS) -c $(SRC_DIR)/server.c -o $(OBJ_DIR)/server.o
+$(OBJ_DIR)/server.o: $(SRC_DIR)/server.c
+	mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $(SRC_DIR)/server.c -o $(OBJ_DIR)/server.o
 
 $(OBJ_DIR)/header_comp.o: $(SRC_DIR)/header_comp.c
 	mkdir -p $(OBJ_DIR)

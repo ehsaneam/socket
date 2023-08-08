@@ -2,7 +2,7 @@
 #define __SERVER_H__
 
 #include "common.h"
-#include "header_comp.h"
+#include "header_decomp.h"
 
 #define READ_SOCKET_FAILED  -1
 
