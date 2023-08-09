@@ -1,6 +1,6 @@
 
-rohc/
+build_server/
 
-build/
+build_client/
 
 .vscode/
