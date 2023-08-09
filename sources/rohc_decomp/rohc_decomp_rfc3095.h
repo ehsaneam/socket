@@ -37,7 +37,6 @@
 #include "decomp_wlsb.h"
 #include "ip_id_offset.h"
 #include "decomp_list.h"
-#include "udp_lite.h"
 #include "ip.h"
 #include "ip_protocol.h"
 #include "crc.h"
@@ -159,7 +158,6 @@ struct rohc_extr_bits
 	/* bits below are for UDP-Lite-based profiles only
 	   @todo TODO should be moved in d_udp_lite.c */
 
-	rohc_packet_cce_t cce_pkt; /**< TODO */
 	rohc_tristate_t cfp;       /**< TODO */
 	rohc_tristate_t cfi;       /**< TODO */
 	uint16_t udp_lite_cc;      /**< The UDP-Lite CC bits found in dynamic
@@ -266,7 +264,6 @@ struct rohc_decoded_values
 
 	/* bits below are for UDP-Lite-based profile only
 	   @todo TODO should be moved in d_udp_lite.c */
-	rohc_packet_cce_t cce_pkt; /**< TODO */
 	rohc_tristate_t cfp;       /**< TODO */
 	rohc_tristate_t cfi;       /**< TODO */
 	uint16_t udp_lite_cc;      /**< The decoded UDP-Lite CC */

@@ -6317,12 +6317,8 @@ static void reset_extr_bits(const struct rohc_decomp_rfc3095_ctxt *const rfc3095
 
 	/* set every bits and sizes to 0 except for CCE-related variables */
 	{
-		const rohc_packet_cce_t cce_pkt = bits->cce_pkt;
-		const rohc_tristate_t cfp = bits->cfp;
 		const rohc_tristate_t cfi = bits->cfi;
 		memset(bits, 0, sizeof(struct rohc_extr_bits));
-		bits->cce_pkt = cce_pkt;
-		bits->cfp = cfp;
 		bits->cfi = cfi;
 	}
 

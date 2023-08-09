@@ -38,7 +38,7 @@
  */
 
 /** The number of ROHC profiles ready to be used */
-#define D_NUM_PROFILES 6U
+#define D_NUM_PROFILES 5U
 
 
 /** Print a warning trace for the given decompression context */
