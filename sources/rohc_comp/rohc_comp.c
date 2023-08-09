@@ -69,7 +69,6 @@
 extern const struct rohc_comp_profile c_rtp_profile;
 extern const struct rohc_comp_profile c_udp_profile;
 extern const struct rohc_comp_profile c_udp_lite_profile;
-extern const struct rohc_comp_profile c_esp_profile;
 extern const struct rohc_comp_profile c_tcp_profile;
 extern const struct rohc_comp_profile c_ip_profile;
 extern const struct rohc_comp_profile c_uncompressed_profile;
@@ -86,7 +85,6 @@ static const struct rohc_comp_profile *const rohc_comp_profiles[C_NUM_PROFILES] 
 	&c_rtp_profile,
 	&c_udp_profile,  /* must be declared after RTP profile */
 	&c_udp_lite_profile,
-	&c_esp_profile,
 	&c_tcp_profile,
 	&c_ip_profile,  /* must be declared after all IP-based profiles */
 	&c_uncompressed_profile, /* must be declared last */
