@@ -155,10 +155,8 @@ static const struct rohc_feedback_opt_charac
 		.crc_req = ROHC_FEEDBACK_OPT_CRC_NOT_REQUIRED,
 		.max_occurs = {
 			[ROHC_PROFILE_UNCOMPRESSED] = 0, /* RFC3095 §5.10.4 */
-			[ROHC_PROFILE_RTP]          = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC3095 §5.7.6.3 */
 			[ROHC_PROFILE_UDP]          = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_IP]           = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
-			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 0, /* RFC6846 §8.3.2 */
 		}
 	},
@@ -170,10 +168,8 @@ static const struct rohc_feedback_opt_charac
 		.crc_req = ROHC_FEEDBACK_OPT_CRC_REQUIRED, /* RFC3095, §5.7.6.4 */
 		.max_occurs = {
 			[ROHC_PROFILE_UNCOMPRESSED] = 0, /* RFC3095 §5.10.4 */
-			[ROHC_PROFILE_RTP]          = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC3095 §5.7.6.4 */
 			[ROHC_PROFILE_UDP]          = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_IP]           = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
-			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 1, /* RFC6846 §8.3.2.1 */
 		}
 	},
@@ -185,10 +181,8 @@ static const struct rohc_feedback_opt_charac
 		.crc_req = ROHC_FEEDBACK_OPT_CRC_NOT_REQUIRED,
 		.max_occurs = {
 			[ROHC_PROFILE_UNCOMPRESSED] = 0, /* RFC3095 §5.10.4 */
-			[ROHC_PROFILE_RTP]          = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC3095 §5.7.6.5 */
 			[ROHC_PROFILE_UDP]          = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_IP]           = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
-			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 1, /* RFC6846 §8.3.2.2 */
 		}
 	},
@@ -200,10 +194,8 @@ static const struct rohc_feedback_opt_charac
 		.crc_req = ROHC_FEEDBACK_OPT_CRC_NOT_REQUIRED,
 		.max_occurs = {
 			[ROHC_PROFILE_UNCOMPRESSED] = 0, /* RFC3095 §5.10.4 */
-			[ROHC_PROFILE_RTP]          = 1, /* RFC4815 §8.5: 1 option needed for 16-bit SN */
 			[ROHC_PROFILE_UDP]          = 1, /* same as RTP */
 			[ROHC_PROFILE_IP]           = 1, /* same as UDP */
-			[ROHC_PROFILE_RTP_LLA]      = 1, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 1, /* RFC6846 §8.3.2.3 */
 		}
 	},
@@ -215,10 +207,8 @@ static const struct rohc_feedback_opt_charac
 		.crc_req = ROHC_FEEDBACK_OPT_CRC_SUGGESTED, /* RFC3095, §5.7.6.7 */
 		.max_occurs = {
 			[ROHC_PROFILE_UNCOMPRESSED] = 0, /* RFC3095 §5.10.4 */
-			[ROHC_PROFILE_RTP]          = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC3095 §5.7.6.7 */
 			[ROHC_PROFILE_UDP]          = 0, /* RFC3095 §5.11.6 */
 			[ROHC_PROFILE_IP]           = 0, /* same as UDP */
-			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 0, /* RFC6846 §8.3.2 */
 		}
 	},
@@ -230,10 +220,8 @@ static const struct rohc_feedback_opt_charac
 		.crc_req = ROHC_FEEDBACK_OPT_CRC_SUGGESTED, /* RFC3095, §5.7.6.8 */
 		.max_occurs = {
 			[ROHC_PROFILE_UNCOMPRESSED] = 0, /* RFC3095 §5.10.4 */
-			[ROHC_PROFILE_RTP]          = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC3095 §5.7.6.8 */
 			[ROHC_PROFILE_UDP]          = 0, /* RFC3095 §5.11.6 */
 			[ROHC_PROFILE_IP]           = 0, /* same as UDP */
-			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 0, /* RFC6846 §8.3.2 */
 		}
 	},
@@ -245,10 +233,8 @@ static const struct rohc_feedback_opt_charac
 		.crc_req = ROHC_FEEDBACK_OPT_CRC_SUGGESTED, /* RFC3095, §5.7.6.9 */
 		.max_occurs = {
 			[ROHC_PROFILE_UNCOMPRESSED] = 0, /* RFC3095 §5.10.4 */
-			[ROHC_PROFILE_RTP]          = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC3095 §5.7.6.9 */
 			[ROHC_PROFILE_UDP]          = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_IP]           = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
-			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 0, /* RFC6846 §8.3.2 */
 		}
 	},
@@ -260,10 +246,8 @@ static const struct rohc_feedback_opt_charac
 		.crc_req = ROHC_FEEDBACK_OPT_CRC_NOT_REQUIRED,
 		.max_occurs = {
 			[ROHC_PROFILE_UNCOMPRESSED] = 0, /* RFC3095 §5.10.4 */
-			[ROHC_PROFILE_RTP]          = 0, /* RFC3095 §5.7.6.2 */
 			[ROHC_PROFILE_UDP]          = 0, /* same as RTP */
 			[ROHC_PROFILE_IP]           = 0, /* same as UDP */
-			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC4362 §4.5 */
 			[ROHC_PROFILE_TCP]          = 0, /* RFC6846 §8.3.2 */
 		}
 	},
@@ -275,10 +259,8 @@ static const struct rohc_feedback_opt_charac
 		.crc_req = ROHC_FEEDBACK_OPT_CRC_NOT_REQUIRED,
 		.max_occurs = {
 			[ROHC_PROFILE_UNCOMPRESSED] = 0, /* RFC3095 §5.10.4 */
-			[ROHC_PROFILE_RTP]          = 0, /* RFC3095 §5.7.6.2 */
 			[ROHC_PROFILE_UDP]          = 0, /* same as RTP */
 			[ROHC_PROFILE_IP]           = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC3843 §3.7 */
-			[ROHC_PROFILE_RTP_LLA]      = 0, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 1, /* RFC6846 §8.3.2.4 */
 		}
 	},

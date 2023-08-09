@@ -237,37 +237,6 @@ typedef enum
 
 } rohc_comp_features_t;
 
-
-/**
- * @brief The prototype of the RTP detection callback
- *
- * User-defined function that is called by the ROHC library for every UDP
- * packet to determine whether the UDP packet transports RTP data. If the
- * function returns true, the RTP profile is used to compress the packet.
- * Otherwise the UDP profile is used.
- *
- * The user-defined function is set by calling the function
- * \ref rohc_comp_set_rtp_detection_cb
- *
- * @param ip           The innermost IP packet
- * @param udp          The UDP header of the packet
- * @param payload      The UDP payload of the packet
- * @param payload_size The size of the UDP payload (in bytes)
- * @param rtp_private  A pointer to a memory area to be used by the callback
- *                     function, may be NULL.
- * @return             true if the packet is an RTP packet, false otherwise
- *
- * @see rohc_comp_set_rtp_detection_cb
- * @ingroup rohc_comp
- */
-typedef bool (*rohc_rtp_detection_callback_t)(const unsigned char *const ip,
-                                              const unsigned char *const udp,
-                                              const unsigned char *const payload,
-                                              const unsigned int payload_size,
-                                              void *const rtp_private)
-	__attribute__((warn_unused_result));
-
-
 /**
  * @brief The prototype of the callback for random numbers
  *
@@ -360,11 +329,6 @@ bool ROHC_EXPORT rohc_comp_get_max_cid(const struct rohc_comp *const comp,
 
 bool ROHC_EXPORT rohc_comp_get_cid_type(const struct rohc_comp *const comp,
                                         rohc_cid_type_t *const cid_type)
-	__attribute__((warn_unused_result));
-
-bool ROHC_EXPORT rohc_comp_set_rtp_detection_cb(struct rohc_comp *const comp,
-                                                rohc_rtp_detection_callback_t callback,
-                                                void *const rtp_private)
 	__attribute__((warn_unused_result));
 
 bool ROHC_EXPORT rohc_comp_set_features(struct rohc_comp *const comp,

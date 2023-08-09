@@ -211,15 +211,10 @@ typedef enum
 {
 	/** The ROHC Uncompressed profile (RFC 3095, section 5.10) */
 	ROHC_PROFILE_UNCOMPRESSED = 0x0000,
-	/** The ROHC RTP profile (RFC 3095, section 8) */
-	ROHC_PROFILE_RTP          = 0x0001,
 	/** The ROHC UDP profile (RFC 3095, section 5.11) */
 	ROHC_PROFILE_UDP          = 0x0002,
 	/** The ROHC IP-only profile (RFC 3843, section 5) */
 	ROHC_PROFILE_IP           = 0x0004,
-	/** The ROHC IP/UDP/RTP Link-Layer Assisted Profile (LLA) profile
-	 *  (RFC 4362, section 6) */
-	ROHC_PROFILE_RTP_LLA      = 0x0005,
 	/** The ROHC TCP profile (RFC 4996) */
 	ROHC_PROFILE_TCP          = 0x0006,
 

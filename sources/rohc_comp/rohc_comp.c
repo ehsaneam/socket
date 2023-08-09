@@ -66,7 +66,6 @@
 #include <stdarg.h>
 
 
-extern const struct rohc_comp_profile c_rtp_profile;
 extern const struct rohc_comp_profile c_udp_profile;
 extern const struct rohc_comp_profile c_tcp_profile;
 extern const struct rohc_comp_profile c_ip_profile;
@@ -81,7 +80,6 @@ extern const struct rohc_comp_profile c_uncompressed_profile;
  */
 static const struct rohc_comp_profile *const rohc_comp_profiles[C_NUM_PROFILES] =
 {
-	&c_rtp_profile,
 	&c_udp_profile,  /* must be declared after RTP profile */
 	&c_tcp_profile,
 	&c_ip_profile,  /* must be declared after all IP-based profiles */
@@ -1303,73 +1301,6 @@ bool rohc_comp_set_list_trans_nr(struct rohc_comp *const comp,
 
 	return true;
 }
-
-
-/**
- * @brief Set the RTP detection callback function
- *
- * Set or replace the callback function that the ROHC library will call to
- * detect RTP streams among other UDP streams.
- *
- * The function is called once per UDP packet to compress, with the IP and
- * UDP headers and the UDP payload. If the callback function returns true, the
- * RTP profile is used for compression, otherwise the IP/UDP profile is used
- * instead.
- *
- * Special value NULL may be used to disable the detection of RTP streams with
- * the callback method. The detection will then be based on a list of UDP
- * ports dedicated for RTP streams.
- *
- * @param comp        The ROHC compressor
- * @param callback    The callback function used to detect RTP packets
- *                    The callback is deactivated if NULL is given as parameter
- * @param rtp_private A pointer to an external memory area
- *                    provided and used by the callback user
- * @return            true on success, false otherwise
- *
- * @ingroup rohc_comp
- *
- * \par Example:
- * \snippet rtp_detection.c define RTP detection callback
- * \code
-        ...
-\endcode
- * \snippet simple_rohc_program.c define ROHC compressor
- * \code
-        ...
-\endcode
- * \snippet simple_rohc_program.c create ROHC compressor
- * \code
-        ...
-\endcode
- * \snippet rtp_detection.c set RTP detection callback
- * \code
-        ...
-\endcode
- * \snippet simple_rohc_program.c destroy ROHC compressor
- *
- * @see rohc_rtp_detection_callback_t
- * @see rohc_comp_add_rtp_port
- * @see rohc_comp_remove_rtp_port
- * @see rohc_comp_reset_rtp_ports
- */
-bool rohc_comp_set_rtp_detection_cb(struct rohc_comp *const comp,
-                                    rohc_rtp_detection_callback_t callback,
-                                    void *const rtp_private)
-{
-	/* sanity check on compressor */
-	if(comp == NULL)
-	{
-		return false;
-	}
-
-	/* set RTP detection callback */
-	comp->rtp_callback = callback;
-	comp->rtp_private = rtp_private;
-
-	return true;
-}
-
 
 /**
  * @brief Is the given compression profile enabled for a compressor?

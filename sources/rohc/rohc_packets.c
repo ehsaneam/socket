@@ -57,17 +57,9 @@ const char * rohc_get_packet_descr(const rohc_packet_t packet_type)
 
 		case ROHC_PACKET_UO_1:
 			return "UO-1";
-		case ROHC_PACKET_UO_1_ID:
-			return "RTP/UO-1-ID";
-		case ROHC_PACKET_UO_1_TS:
-			return "RTP/UO-1-TS";
-		case ROHC_PACKET_UO_1_RTP:
-			return "RTP/UO-1";
 
 		case ROHC_PACKET_UOR_2:
 			return "UOR-2";
-		case ROHC_PACKET_UOR_2_RTP:
-			return "RTP/UOR-2";
 		case ROHC_PACKET_UOR_2_ID:
 			return "UOR-2-ID";
 		case ROHC_PACKET_UOR_2_TS:
@@ -194,17 +186,9 @@ rohc_packet_t rohc_get_packet_type(const char *const packet_id)
 	{
 		return ROHC_PACKET_UO_1_TS;
 	}
-	else if(strcmp(packet_id, "uo1rtp") == 0)
-	{
-		return ROHC_PACKET_UO_1_RTP;
-	}
 	else if(strcmp(packet_id, "uor2") == 0)
 	{
 		return ROHC_PACKET_UOR_2;
-	}
-	else if(strcmp(packet_id, "uor2rtp") == 0)
-	{
-		return ROHC_PACKET_UOR_2_RTP;
 	}
 	else if(strcmp(packet_id, "uor2id") == 0)
 	{
@@ -342,7 +326,6 @@ bool rohc_packet_carry_crc_7_or_8(const rohc_packet_t packet_type)
 		case ROHC_PACKET_IR_CR:
 		case ROHC_PACKET_IR_DYN:
 		case ROHC_PACKET_UOR_2:
-		case ROHC_PACKET_UOR_2_RTP:
 		case ROHC_PACKET_UOR_2_TS:
 		case ROHC_PACKET_UOR_2_ID:
 		case ROHC_PACKET_TCP_CO_COMMON:
@@ -352,7 +335,6 @@ bool rohc_packet_carry_crc_7_or_8(const rohc_packet_t packet_type)
 			break;
 		case ROHC_PACKET_UO_0:
 		case ROHC_PACKET_UO_1:
-		case ROHC_PACKET_UO_1_RTP:
 		case ROHC_PACKET_UO_1_TS:
 		case ROHC_PACKET_UO_1_ID:
 		case ROHC_PACKET_NORMAL:

@@ -43,7 +43,7 @@
  */
 
 /** The number of ROHC profiles ready to be used */
-#define C_NUM_PROFILES 5U
+#define C_NUM_PROFILES 4U
 
 /** The default maximal number of packets sent in > IR states (= FO and SO
  *  states) before changing back the state to IR (periodic refreshes) */
@@ -164,15 +164,6 @@ struct rohc_comp
 	size_t rru_off;
 	/** The number of the remaining bytes in the RRU buffer */
 	size_t rru_len;
-
-
-	/* variables related to RTP detection */
-
-	/** The callback function used to detect RTP packet */
-	rohc_rtp_detection_callback_t rtp_callback;
-	/** Pointer to an external memory area provided/used by the callback user */
-	void *rtp_private;
-
 
 	/* some statistics about the compression process: */
 

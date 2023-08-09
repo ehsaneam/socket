@@ -149,14 +149,10 @@ const char * rohc_get_profile_descr(const rohc_profile_t profile)
 	{
 		case ROHC_PROFILE_UNCOMPRESSED:
 			return "Uncompressed";
-		case ROHC_PROFILE_RTP:
-			return "IP/UDP/RTP";
 		case ROHC_PROFILE_UDP:
 			return "IP/UDP";
 		case ROHC_PROFILE_IP:
 			return "IP-only";
-		case ROHC_PROFILE_RTP_LLA:
-			return "IP/UDP/RTP (LLA)";
 		case ROHC_PROFILE_TCP:
 			return "IP/TCP";
 		case ROHC_PROFILE_MAX:
