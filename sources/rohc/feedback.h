@@ -160,8 +160,6 @@ static const struct rohc_feedback_opt_charac
 			[ROHC_PROFILE_IP]           = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
 			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 0, /* RFC6846 §8.3.2 */
-			[ROHC_PROFILE_UDPLITE_RTP]  = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
-			[ROHC_PROFILE_UDPLITE]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
 		}
 	},
 	[ROHC_FEEDBACK_OPT_REJECT] = {
@@ -177,8 +175,6 @@ static const struct rohc_feedback_opt_charac
 			[ROHC_PROFILE_IP]           = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
 			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 1, /* RFC6846 §8.3.2.1 */
-			[ROHC_PROFILE_UDPLITE_RTP]  = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
-			[ROHC_PROFILE_UDPLITE]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
 		}
 	},
 	[ROHC_FEEDBACK_OPT_SN_NOT_VALID] = {
@@ -194,8 +190,6 @@ static const struct rohc_feedback_opt_charac
 			[ROHC_PROFILE_IP]           = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
 			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 1, /* RFC6846 §8.3.2.2 */
-			[ROHC_PROFILE_UDPLITE_RTP]  = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
-			[ROHC_PROFILE_UDPLITE]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
 		}
 	},
 	[ROHC_FEEDBACK_OPT_SN] = {
@@ -211,8 +205,6 @@ static const struct rohc_feedback_opt_charac
 			[ROHC_PROFILE_IP]           = 1, /* same as UDP */
 			[ROHC_PROFILE_RTP_LLA]      = 1, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 1, /* RFC6846 §8.3.2.3 */
-			[ROHC_PROFILE_UDPLITE_RTP]  = 1, /* same as RTP */
-			[ROHC_PROFILE_UDPLITE]      = 1, /* same as UDP */
 		}
 	},
 	[ROHC_FEEDBACK_OPT_CLOCK] = {
@@ -228,8 +220,6 @@ static const struct rohc_feedback_opt_charac
 			[ROHC_PROFILE_IP]           = 0, /* same as UDP */
 			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 0, /* RFC6846 §8.3.2 */
-			[ROHC_PROFILE_UDPLITE_RTP]  = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
-			[ROHC_PROFILE_UDPLITE]      = 0, /* same as UDP */
 		}
 	},
 	[ROHC_FEEDBACK_OPT_JITTER] = {
@@ -245,8 +235,6 @@ static const struct rohc_feedback_opt_charac
 			[ROHC_PROFILE_IP]           = 0, /* same as UDP */
 			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 0, /* RFC6846 §8.3.2 */
-			[ROHC_PROFILE_UDPLITE_RTP]  = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
-			[ROHC_PROFILE_UDPLITE]      = 0, /* same as UDP */
 		}
 	},
 	[ROHC_FEEDBACK_OPT_LOSS] = {
@@ -262,8 +250,6 @@ static const struct rohc_feedback_opt_charac
 			[ROHC_PROFILE_IP]           = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
 			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 0, /* RFC6846 §8.3.2 */
-			[ROHC_PROFILE_UDPLITE_RTP]  = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as RTP */
-			[ROHC_PROFILE_UDPLITE]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* same as UDP */
 		}
 	},
 	[ROHC_FEEDBACK_OPT_CV_REQUEST] = {
@@ -279,8 +265,6 @@ static const struct rohc_feedback_opt_charac
 			[ROHC_PROFILE_IP]           = 0, /* same as UDP */
 			[ROHC_PROFILE_RTP_LLA]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC4362 §4.5 */
 			[ROHC_PROFILE_TCP]          = 0, /* RFC6846 §8.3.2 */
-			[ROHC_PROFILE_UDPLITE_RTP]  = 0, /* same as RTP */
-			[ROHC_PROFILE_UDPLITE]      = 0, /* same as UDP */
 		}
 	},
 	[ROHC_FEEDBACK_OPT_CONTEXT_MEMORY] = {
@@ -296,8 +280,6 @@ static const struct rohc_feedback_opt_charac
 			[ROHC_PROFILE_IP]           = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC3843 §3.7 */
 			[ROHC_PROFILE_RTP_LLA]      = 0, /* same as RTP */
 			[ROHC_PROFILE_TCP]          = 1, /* RFC6846 §8.3.2.4 */
-			[ROHC_PROFILE_UDPLITE_RTP]  = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC4019 §5.7 */
-			[ROHC_PROFILE_UDPLITE]      = ROHC_FEEDBACK_OPT_MAX_OCCURS, /* RFC4019 §5.7 */
 		}
 	},
 	[ROHC_FEEDBACK_OPT_UNKNOWN_10] = {

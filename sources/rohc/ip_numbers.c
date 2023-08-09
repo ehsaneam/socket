@@ -110,8 +110,6 @@ const char * rohc_get_ip_proto_descr(const uint8_t protocol)
 			return "Destination option";
 		case ROHC_IPPROTO_MOBILITY:
 			return "Mobility option";
-		case ROHC_IPPROTO_UDPLITE:
-			return "UDP-Lite";
 		case ROHC_IPPROTO_HIP:
 			return "HIP";
 		case ROHC_IPPROTO_SHIM:

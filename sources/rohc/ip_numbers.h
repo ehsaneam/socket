@@ -72,8 +72,6 @@ enum
 	ROHC_IPPROTO_DSTOPTS   = 60,
 	/** The IP protocol number for Mobility Header */
 	ROHC_IPPROTO_MOBILITY  = 135,
-	/** The IP protocol number for UDP-Lite */
-	ROHC_IPPROTO_UDPLITE   = 136,
 	/** The IP protocol number for the Host Identity Protocol (HIP) */
 	ROHC_IPPROTO_HIP       = 139,
 	/** The IP protocol number for the Shim6 Protocol */

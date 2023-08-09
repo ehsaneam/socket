@@ -28,7 +28,7 @@ int compDecompTest()
     if(!rohc_comp_enable_profiles(compressor, ROHC_PROFILE_UNCOMPRESSED, 
                                   ROHC_PROFILE_IP, ROHC_PROFILE_TCP, -1))
 	{
-		PRINT_ERR_ROHC("failed to enable the IP/UDP and IP/UDP-Lite profiles\n");
+		PRINT_ERR_ROHC("failed to enable the IP/TCP profile\n");
 		return -1;
 	}
     rohc_buf_byte_at(ip_packet, 0) = 4 << 4; /* IP version 4 */
@@ -77,7 +77,7 @@ int compDecompTest()
 	if(!rohc_decomp_enable_profiles(decompressor, ROHC_PROFILE_UNCOMPRESSED, 
                                   ROHC_PROFILE_IP, ROHC_PROFILE_TCP, -1))
 	{
-		PRINT_ERR_ROHC("failed to enable the IP/UDP and IP/UDP-Lite profiles\n");
+		PRINT_ERR_ROHC("failed to enable the IP/TCP profiles\n");
 		return -1;
 	}
     status = rohc_decompress3(decompressor, rohc_packet, &decomp_packet,

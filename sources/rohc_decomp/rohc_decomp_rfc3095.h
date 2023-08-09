@@ -160,12 +160,7 @@ struct rohc_extr_bits
 
 	rohc_tristate_t cfp;       /**< TODO */
 	rohc_tristate_t cfi;       /**< TODO */
-	uint16_t udp_lite_cc;      /**< The UDP-Lite CC bits found in dynamic
-	                                chain of IR/IR-DYN header or in remainder
-	                                of UO* header */
-	size_t udp_lite_cc_nr;     /**< The number of UDP-Lite CC bits */
-
-
+	
 	/* bits below are for RTP profile only
 	   @todo TODO should be moved in d_rtp.c */
 
@@ -266,7 +261,6 @@ struct rohc_decoded_values
 	   @todo TODO should be moved in d_udp_lite.c */
 	rohc_tristate_t cfp;       /**< TODO */
 	rohc_tristate_t cfi;       /**< TODO */
-	uint16_t udp_lite_cc;      /**< The decoded UDP-Lite CC */
 
 	/* bits below are for RTP profile only
 	   @todo TODO should be moved in d_rtp.c */
