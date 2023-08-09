@@ -88,25 +88,6 @@ struct ipv4_header_info
 	uint16_t id_delta;
 };
 
-
-/**
- * @brief Store information about an IPv6 header between the different
- *        compressions of IP packets.
- *
- * Defines an object that contains counters, flags and structures related to an
- * IPv6 header and that need to be saved between the different compressions of
- * packets. A compression context owns objects like this for the two first
- * IPv6 headers.
- */
-struct ipv6_header_info
-{
-	/// The previous IPv6 header
-	struct ipv6_hdr old_ip;
-	/// The extension compressor
-	struct list_comp ext_comp;
-};
-
-
 /**
  * @brief Store information about an IP (IPv4 or IPv6) header between the
  *        different compressions of IP packets.
@@ -130,7 +111,6 @@ struct ip_header_info
 	union
 	{
 		struct ipv4_header_info v4; ///< The IPv4-specific header info
-		struct ipv6_header_info v6; ///< The IPv6-specific header info
 	} info;                        ///< The version specific header info
 };
 

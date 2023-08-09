@@ -37,7 +37,6 @@
 #include "rohc_bit_ops.h"
 #include "cid.h"
 #include "ip_id_offset.h"
-#include "comp_list_ipv6.h"
 #include "sdvl.h"
 #include "crc.h"
 
@@ -80,8 +79,6 @@ static void ip_header_info_new(struct ip_header_info *const header_info,
                                void *const trace_cb_priv,
                                const int profile_id)
 	__attribute__((nonnull(1, 2)));
-static void ip_header_info_free(struct ip_header_info *const header_info)
-	__attribute__((nonnull(1)));
 
 static void c_init_tmp_variables(struct generic_tmp_vars *const tmp_vars);
 
@@ -130,13 +127,6 @@ static int code_ipv4_static_part(const struct rohc_comp_ctxt *const context,
                                  int counter)
 	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4)));
 
-static int code_ipv6_static_part(const struct rohc_comp_ctxt *const context,
-                                 struct ip_header_info *const header_info,
-                                 const struct ip_packet *const ip,
-                                 uint8_t *const dest,
-                                 int counter)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4)));
-
 static int rohc_code_dynamic_part(const struct rohc_comp_ctxt *const context,
                                   const struct net_pkt *const uncomp_pkt,
                                   uint8_t *const rohc_pkt,
@@ -157,14 +147,6 @@ static int code_ipv4_dynamic_part(const struct rohc_comp_ctxt *const context,
                                   uint8_t *const dest,
                                   int counter)
 	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4)));
-
-static int code_ipv6_dynamic_part(const struct rohc_comp_ctxt *const context,
-                                  const unsigned int hdr_pos,
-                                  struct ip_header_info *const header_info,
-                                  const struct ip_packet *const ip,
-                                  uint8_t *const dest,
-                                  int counter)
-	__attribute__((warn_unused_result, nonnull(1, 3, 4, 5)));
 
 static int code_uo_remainder(struct rohc_comp_ctxt *const context,
                              const struct net_pkt *const uncomp_pkt,
@@ -366,6 +348,9 @@ static void ip_header_info_new(struct ip_header_info *const header_info,
                                void *const trace_cb_priv,
                                const int profile_id)
 {
+	assert(profile_id>=0);
+	assert(trace_cb==NULL || trace_cb!=NULL);
+	assert(trace_cb_priv==NULL || trace_cb_priv!=NULL);
 	assert(header_info != NULL);
 	assert(ip != NULL);
 	assert(list_trans_nr > 0);
@@ -394,29 +379,7 @@ static void ip_header_info_new(struct ip_header_info *const header_info,
 		header_info->info.v4.nbo_count = MAX_FO_COUNT;
 		header_info->info.v4.sid_count = MAX_FO_COUNT;
 	}
-	else
-	{
-		/* init the compression context for IPv6 extension header list */
-		rohc_comp_list_ipv6_new(&header_info->info.v6.ext_comp, list_trans_nr,
-		                        trace_cb, trace_cb_priv, profile_id);
-	}
 }
-
-
-/**
- * @brief Reset the given IP header info
- *
- * @param header_info  The IP header info to reset
- */
-static void ip_header_info_free(struct ip_header_info *const header_info)
-{
-	if(header_info->version == IPV6)
-	{
-		/* IPv6: destroy the list of IPv6 extension headers */
-		rohc_comp_list_ipv6_free(&header_info->info.v6.ext_comp);
-	}
-}
-
 
 /**
  * @brief Initialize all temporary variables stored in the context.
@@ -555,12 +518,6 @@ void rohc_comp_rfc3095_destroy(struct rohc_comp_ctxt *const context)
 {
 	struct rohc_comp_rfc3095_ctxt *rfc3095_ctxt =
 		(struct rohc_comp_rfc3095_ctxt *) context->specific;
-
-	ip_header_info_free(&rfc3095_ctxt->outer_ip_flags);
-	if(rfc3095_ctxt->ip_hdr_nr > 1)
-	{
-		ip_header_info_free(&rfc3095_ctxt->inner_ip_flags);
-	}
 
 	zfree(rfc3095_ctxt->specific);
 	free(rfc3095_ctxt);
@@ -1228,7 +1185,6 @@ static bool rohc_comp_rfc3095_detect_changes(struct rohc_comp_ctxt *const contex
 		else
 		{
 			rohc_comp_debug(context, "packet got one less IP header than context");
-			ip_header_info_free(&rfc3095_ctxt->inner_ip_flags);
 		}
 		rfc3095_ctxt->ip_hdr_nr = uncomp_pkt->ip_hdr_nr;
 	}
@@ -1971,11 +1927,6 @@ static int rohc_code_static_ip_part(const struct rohc_comp_ctxt *const context,
 		counter = code_ipv4_static_part(context, header_info,
 		                                ip, dest, counter);
 	}
-	else /* IPV6 */
-	{
-		counter = code_ipv6_static_part(context, header_info,
-		                                ip, dest, counter);
-	}
 
 	return counter;
 }
@@ -2045,82 +1996,6 @@ static int code_ipv4_static_part(const struct rohc_comp_ctxt *const context,
 
 	return counter;
 }
-
-
-/**
- * @brief Build the IPv6 static part of the IR packet
- *
- * \verbatim
-
- Static part IPv6 (5.7.7.3):
-
-    +---+---+---+---+---+---+---+---+
- 1  |  Version = 6  |Flow Label(msb)|   1 octet
-    +---+---+---+---+---+---+---+---+
- 2  /        Flow Label (lsb)       /   2 octets
-    +---+---+---+---+---+---+---+---+
- 3  |          Next Header          |   1 octet
-    +---+---+---+---+---+---+---+---+
- 4  /        Source Address         /   16 octets
-    +---+---+---+---+---+---+---+---+
- 5  /      Destination Address      /   16 octets
-    +---+---+---+---+---+---+---+---+
-
-\endverbatim
- *
- * @param context     The compression context
- * @param header_info The IP header info stored in the profile
- * @param ip          The IPv6 header the static part is built for
- * @param dest        The rohc-packet-under-build buffer
- * @param counter     The current position in the rohc-packet-under-build buffer
- * @return            The new position in the rohc-packet-under-build buffer
- */
-static int code_ipv6_static_part(const struct rohc_comp_ctxt *const context,
-                                 struct ip_header_info *const header_info,
-                                 const struct ip_packet *const ip,
-                                 uint8_t *const dest,
-                                 int counter)
-{
-	uint8_t protocol;
-	const struct ipv6_addr *saddr;
-	const struct ipv6_addr *daddr;
-
-	/* part 1 */
-	dest[counter] = ((6 << 4) & 0xf0) | ip->header.v6.flow1;
-	rohc_comp_debug(context, "version + flow label (msb) = 0x%02x",
-	                dest[counter]);
-	counter++;
-
-	/* part 2 */
-	memcpy(dest + counter, &ip->header.v6.flow2, sizeof(uint16_t));
-	counter += sizeof(uint16_t);
-	rohc_comp_debug(context, "flow label (lsb) = 0x%02x%02x",
-	                dest[counter - 2], dest[counter - 1]);
-
-	/* part 3 */
-	protocol = ip_get_protocol(ip);
-	rohc_comp_debug(context, "next header = 0x%02x", protocol);
-	dest[counter] = protocol;
-	counter++;
-	header_info->protocol_count++;
-
-	/* part 4 */
-	saddr = ipv6_get_saddr(ip);
-	memcpy(&dest[counter], saddr, 16);
-	rohc_comp_debug(context, "src addr = " IPV6_ADDR_FORMAT,
-	                IPV6_ADDR_IN6(saddr));
-	counter += 16;
-
-	/* part 5 */
-	daddr = ipv6_get_daddr(ip);
-	memcpy(&dest[counter], daddr, 16);
-	rohc_comp_debug(context, "dst addr = " IPV6_ADDR_FORMAT,
-	                IPV6_ADDR_IN6(daddr));
-	counter += 16;
-
-	return counter;
-}
-
 
 /**
  * @brief Build the dynamic part of the IR and IR-DYN packets
@@ -2207,14 +2082,12 @@ static int rohc_code_dynamic_ip_part(const struct rohc_comp_ctxt *const context,
                                      uint8_t *const dest,
                                      int counter)
 {
+	int chert = counter;
+	counter = hdr_pos;
+	counter = chert;
 	if(ip_get_version(ip) == IPV4)
 	{
 		counter = code_ipv4_dynamic_part(context, header_info,
-		                                 ip, dest, counter);
-	}
-	else /* IPV6 */
-	{
-		counter = code_ipv6_dynamic_part(context, hdr_pos, header_info,
 		                                 ip, dest, counter);
 	}
 
@@ -2320,103 +2193,6 @@ static int code_ipv4_dynamic_part(const struct rohc_comp_ctxt *const context,
 
 	return counter;
 }
-
-
-/**
- * @brief Build the IPv6 dynamic part of the IR and IR-DYN packets.
- *
- * \verbatim
-
- Dynamic part IPv6 (5.7.7.3):
-
-    +---+---+---+---+---+---+---+---+
- 1  |         Traffic Class         |   1 octet
-    +---+---+---+---+---+---+---+---+
- 2  |           Hop Limit           |   1 octet
-    +---+---+---+---+---+---+---+---+
- 3  / Generic extension header list /   variable length
-    +---+---+---+---+---+---+---+---+
-
-\endverbatim
- *
- * @param context     The compression context
- * @param hdr_pos     The position of the IP header: 1 for the outer header
- *                    or 2 for the inner IP header
- * @param header_info The IP header info stored in the profile
- * @param ip          The IPv6 header the dynamic part is built for
- * @param dest        The rohc-packet-under-build buffer
- * @param counter     The current position in the rohc-packet-under-build buffer
- * @return            The new position in the rohc-packet-under-build buffer,
- *                    -1 in case of error
- */
-static int code_ipv6_dynamic_part(const struct rohc_comp_ctxt *const context,
-                                  const unsigned int hdr_pos,
-                                  struct ip_header_info *const header_info,
-                                  const struct ip_packet *const ip,
-                                  uint8_t *const dest,
-                                  int counter)
-{
-	unsigned int tos;
-	unsigned int ttl;
-
-	/* part 1 */
-	tos = ip_get_tos(ip);
-	dest[counter] = tos;
-	counter++;
-	header_info->tos_count++;
-	rohc_comp_debug(context, "TC = 0x%02x", tos);
-
-	/* part 2 */
-	ttl = ip_get_ttl(ip);
-	dest[counter] = ttl;
-	counter++;
-	header_info->ttl_count++;
-	rohc_comp_debug(context, "HL = 0x%02x", ttl);
-
-	/* part 3: Generic extension header list */
-	{
-		const struct rohc_comp_rfc3095_ctxt *const rfc3095_ctxt =
-			(struct rohc_comp_rfc3095_ctxt *) context->specific;
-		bool do_send_ipv6_ext;
-
-		if(hdr_pos == 1)
-		{
-			do_send_ipv6_ext = is_field_changed(rfc3095_ctxt->tmp.changed_fields,
-			                                    MOD_IPV6_EXT_LIST_STRUCT |
-			                                    MOD_IPV6_EXT_LIST_CONTENT);
-		}
-		else
-		{
-			do_send_ipv6_ext = is_field_changed(rfc3095_ctxt->tmp.changed_fields2,
-			                                    MOD_IPV6_EXT_LIST_STRUCT |
-			                                    MOD_IPV6_EXT_LIST_CONTENT);
-		}
-
-		if(do_send_ipv6_ext)
-		{
-			rohc_comp_debug(context, "extension header list: send some bits");
-			counter = rohc_list_encode(&header_info->info.v6.ext_comp, dest, counter);
-			if(counter < 0)
-			{
-				rohc_comp_warn(context, "failed to encode list");
-				goto error;
-			}
-		}
-		else
-		{
-			/* no need to send any extension bit, write a zero byte in packet */
-			rohc_comp_debug(context, "extension header list: no bit to send");
-			dest[counter] = 0x00;
-			counter++;
-		}
-	}
-
-	return counter;
-
-error:
-	return -1;
-}
-
 
 /**
  * @brief Build the tail of the UO packet.
@@ -3987,14 +3763,6 @@ static void update_context_ip_hdr(struct ip_header_info *const ip_flags,
 		ip_flags->info.v4.old_nbo = ip_flags->info.v4.nbo;
 		ip_flags->info.v4.old_sid = ip_flags->info.v4.sid;
 	}
-	else /* IPV6 */
-	{
-		ip_flags->info.v6.old_ip = *(ipv6_get_header(ip));
-		/* replace Next Header by the one of the last extension header */
-		ip_flags->info.v6.old_ip.nh = ip_get_protocol(ip);
-		/* update compression list context */
-		rohc_list_update_context(&ip_flags->info.v6.ext_comp);
-	}
 }
 
 
@@ -4328,15 +4096,6 @@ static unsigned short detect_changed_fields(const struct rohc_comp_ctxt *const c
 		old_ttl = old_ip->ttl;
 		old_protocol = old_ip->protocol;
 	}
-	else /* IPV6 */
-	{
-		const struct ipv6_hdr *old_ip;
-
-		old_ip = &header_info->info.v6.old_ip;
-		old_tos = ipv6_get_tc(old_ip);
-		old_ttl = old_ip->hl;
-		old_protocol = old_ip->nh;
-	}
 
 	new_tos = ip_get_tos(ip);
 	if(old_tos != new_tos)
@@ -4362,33 +4121,7 @@ static unsigned short detect_changed_fields(const struct rohc_comp_ctxt *const c
 		ret_value |= MOD_PROTOCOL;
 	}
 
-	/* IPv6 extension headers */
-	if(ip_get_version(ip) == IPV6)
-	{
-		bool list_struct_changed;
-		bool list_content_changed;
-
-		if(!detect_ipv6_ext_changes(&header_info->info.v6.ext_comp, ip,
-		                            &list_struct_changed, &list_content_changed))
-		{
-			goto error;
-		}
-		if(list_struct_changed)
-		{
-			rohc_comp_debug(context, "IPv6 extension headers changed of structure");
-			ret_value |= MOD_IPV6_EXT_LIST_STRUCT;
-		}
-		if(list_content_changed)
-		{
-			rohc_comp_debug(context, "IPv6 extension headers changed of content");
-			ret_value |= MOD_IPV6_EXT_LIST_CONTENT;
-		}
-	}
-
 	return ret_value;
-
-error:
-	return MOD_ERROR;
 }
 
 
@@ -4614,12 +4347,7 @@ static bool encode_uncomp_fields(struct rohc_comp_ctxt *const context,
 		c_add_wlsb(&rfc3095_ctxt->outer_ip_flags.info.v4.ip_id_window, rfc3095_ctxt->sn,
 		           rfc3095_ctxt->outer_ip_flags.info.v4.id_delta);
 	}
-	else /* IPV6 */
-	{
-		/* no IP-ID in IPv6 */
-		rfc3095_ctxt->tmp.nr_ip_id_bits = 0;
-	}
-
+	
 	/* update info related to the IP-ID of the inner header
 	 * only if header is IPv4 */
 	if(uncomp_pkt->ip_hdr_nr > 1 &&
@@ -4659,10 +4387,6 @@ static bool encode_uncomp_fields(struct rohc_comp_ctxt *const context,
 		/* add the new IP-ID / SN delta to the W-LSB encoding object */
 		c_add_wlsb(&rfc3095_ctxt->inner_ip_flags.info.v4.ip_id_window, rfc3095_ctxt->sn,
 		           rfc3095_ctxt->inner_ip_flags.info.v4.id_delta);
-	}
-	else if(uncomp_pkt->ip_hdr_nr > 1) /* IPV6 */
-	{
-		rfc3095_ctxt->tmp.nr_ip_id_bits2 = 0;
 	}
 
 	/* update info related to transport header */

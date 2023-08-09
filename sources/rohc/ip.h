@@ -28,7 +28,6 @@
 #define ROHC_COMMON_IP_H
 
 #include "ipv4.h"
-#include "ipv6.h"
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -85,7 +84,6 @@ struct ip_packet
 		/// The IPv4 header
 		struct ipv4_hdr v4;
 		/// The IPv6 header
-		struct ipv6_hdr v6;
 	} header;
 
 	/// The whole IP data (header + payload) if not NULL
@@ -362,9 +360,6 @@ void ipv4_set_df(struct ip_packet *const ip, const int value)
 
 /* IPv6 specific functions */
 
-static inline
-size_t ipv6_get_hdrlen(const struct ip_packet *const ip)
-	__attribute__((warn_unused_result, nonnull(1), const));
 const struct ipv6_hdr * ipv6_get_header(const struct ip_packet *const ip)
 	__attribute__((warn_unused_result, nonnull(1), pure));
 uint32_t ip_get_flow_label(const struct ip_packet *const ip)
@@ -402,14 +397,6 @@ size_t ipv4_get_hdrlen(const struct ip_packet *const ip)
 {
 	return (ip->header.v4.ihl * 4);
 }
-
-
-static inline
-size_t ipv6_get_hdrlen(const struct ip_packet *const ip __attribute__((unused)))
-{
-	return sizeof(struct ipv6_hdr);
-}
-
 
 #endif
 

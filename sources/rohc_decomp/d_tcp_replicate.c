@@ -42,12 +42,6 @@ static int tcp_parse_replicate_ip(const struct rohc_decomp_ctxt *const context,
                                   struct rohc_tcp_extr_ip_bits *const ip_bits)
 	__attribute__((warn_unused_result, nonnull(1, 2, 4)));
 
-static int tcp_parse_replicate_ipv6_option(const struct rohc_decomp_ctxt *const context,
-                                           ip_option_context_t *const opt_context,
-                                           const uint8_t *const rohc_packet,
-                                           const size_t rohc_length)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3)));
-
 static int tcp_parse_replicate_tcp(const struct rohc_decomp_ctxt *const context,
                                    const uint8_t *const rohc_packet,
                                    const size_t rohc_length,
@@ -141,7 +135,6 @@ static int tcp_parse_replicate_ip(const struct rohc_decomp_ctxt *const context,
 	const uint8_t *remain_data = rohc_packet;
 	size_t remain_len = rohc_length;
 	size_t size = 0;
-	int ret;
 
 	rohc_decomp_debug(context, "parse IP replicate part");
 
@@ -223,106 +216,7 @@ static int tcp_parse_replicate_ip(const struct rohc_decomp_ctxt *const context,
 #endif
 		}
 	}
-	else
-	{
-		const ipv6_replicate1_t *const ipv6_replicate1 =
-			(ipv6_replicate1_t *) remain_data;
-		size_t opts_nr;
-
-		if(remain_len < sizeof(ipv6_replicate1_t))
-		{
-			rohc_decomp_warn(context, "malformed ROHC packet: too short for "
-			                 "IPv6 replicate part");
-			goto error;
-		}
-
-		/* DSCP and ECN flags */
-		ip_bits->dscp_bits = ipv6_replicate1->dscp;
-		ip_bits->dscp_bits_nr = 6;
-		ip_bits->ecn_flags_bits = ipv6_replicate1->ip_ecn_flags;
-		ip_bits->ecn_flags_bits_nr = 2;
-
-		if(ipv6_replicate1->reserved1 != 0)
-		{
-			rohc_decomp_debug(context, "IPv6 replicate part: reserved field is 0x%x "
-			                  "instead of 0x0", ipv6_replicate1->reserved1);
-#ifdef ROHC_RFC_STRICT_DECOMPRESSOR
-			goto error;
-#endif
-		}
-
-		/* Flow Label if any */
-		if(ipv6_replicate1->fl_enc_flag == 0)
-		{
-			/* no Flow Label: reserved field should be 0 */
-			if(ipv6_replicate1->reserved2 != 0)
-			{
-				rohc_decomp_debug(context, "IPv6 replicate part: reserved field is 0x%x "
-				                  "instead of 0x0", ipv6_replicate1->reserved2);
-#ifdef ROHC_RFC_STRICT_DECOMPRESSOR
-				goto error;
-#endif
-			}
-
-			/* skip IPv6 replicate part without Flow Label */
-			size += sizeof(ipv6_replicate1_t);
-			remain_data += sizeof(ipv6_replicate1_t);
-			remain_len -= sizeof(ipv6_replicate1_t);
-		}
-		else
-		{
-			/* FLow Label is present */
-			const ipv6_replicate2_t *const ipv6_replicate2 =
-				(ipv6_replicate2_t *) remain_data;
-
-			if(remain_len < sizeof(ipv6_replicate2_t))
-			{
-				rohc_decomp_warn(context, "malformed ROHC packet: too short for "
-				                 "IPv6 replicate part");
-				goto error;
-			}
-
-			ip_bits->flowid = (ipv6_replicate2->flow_label1 << 16) |
-			                  rohc_ntoh16(ipv6_replicate2->flow_label2);
-			assert((ip_bits->flowid & 0xfffff) == ip_bits->flowid);
-			rohc_decomp_debug(context, "  IPv6 flow label = 0x%05x", ip_bits->flowid);
-			ip_bits->flowid_nr = 20;
-
-			/* skip IPv6 replicate part with Flow Label */
-			size += sizeof(ipv6_replicate2_t);
-			remain_data += sizeof(ipv6_replicate2_t);
-			remain_len -= sizeof(ipv6_replicate2_t);
-		}
-
-		/* no IP-ID for IPv6, simulate random behavior to be generic with IPv4 code */
-		ip_bits->id_behavior = IP_ID_BEHAVIOR_RAND;
-		ip_bits->id_behavior_nr = 2;
-
-		/* parse IPv6 extension headers */
-		rohc_decomp_debug(context, "parse the replicate parts of the %zu IPv6 "
-		                  "extension headers", ip_bits->opts_nr);
-
-		assert(ip_bits->proto_nr == 8);
-		for(opts_nr = 0; opts_nr < ip_bits->opts_nr; opts_nr++)
-		{
-			ip_option_context_t *const opt = &(ip_bits->opts[opts_nr]);
-
-			ret = tcp_parse_replicate_ipv6_option(context, opt, remain_data, remain_len);
-			if(ret < 0)
-			{
-				rohc_decomp_warn(context, "malformed ROHC packet: malformed "
-				                 "IPv6 replicate option part");
-				goto error;
-			}
-			rohc_decomp_debug(context, "IPv6 replicate option part is %d-byte "
-			                  "length", ret);
-			assert(remain_len >= ((size_t) ret));
-			size += ret;
-			remain_data += ret;
-			remain_len -= ret;
-		}
-	}
-
+	
 	rohc_decomp_dump_buf(context, "IP replicate part", rohc_packet, size);
 
 	return size;
@@ -330,128 +224,6 @@ static int tcp_parse_replicate_ip(const struct rohc_decomp_ctxt *const context,
 error:
 	return -1;
 }
-
-
-/**
- * @brief Decode the replicate IPv6 option header of the rohc packet.
- *
- * @param context           The decompression context
- * @param[out] opt_context  The specific IPv6 option decompression context
- * @param rohc_packet       The remaining part of the ROHC packet
- * @param rohc_length       The remaining length (in bytes) of the ROHC packet
- * @return                  The length of replicate IP header in case of success,
- *                          -1 if an error occurs
- */
-static int tcp_parse_replicate_ipv6_option(const struct rohc_decomp_ctxt *const context,
-                                           ip_option_context_t *const opt_context,
-                                           const uint8_t *const rohc_packet,
-                                           const size_t rohc_length)
-{
-	const uint8_t *remain_data = rohc_packet;
-	size_t remain_len = rohc_length;
-	size_t size = 0;
-
-	rohc_decomp_debug(context, "parse replicate part of the %zu-byte IPv6 extension "
-	                  "header '%s' (%u)", opt_context->len,
-	                  rohc_get_ip_proto_descr(opt_context->proto), opt_context->proto);
-
-	switch(opt_context->proto)
-	{
-		case ROHC_IPPROTO_HOPOPTS:  /* IPv6 Hop-by-Hop options */
-		case ROHC_IPPROTO_DSTOPTS:  /* IPv6 destination options */
-		case ROHC_IPPROTO_ROUTING:  /* IPv6 routing header */
-		{
-			uint8_t discriminator;
-
-			/* parse option discriminator */
-			if(remain_len < sizeof(uint8_t))
-			{
-				rohc_decomp_warn(context, "malformed IPv6 option: malformed option "
-				                 "%u: at least 1 byte required for discriminator",
-				                 opt_context->proto);
-				goto error;
-			}
-			discriminator = remain_data[0];
-			size++;
-			remain_data++;
-			remain_len--;
-
-			/* is option present or not? */
-			if(discriminator == 0x80)
-			{
-				/* option is present: parse option length, then option data */
-				uint8_t opt_len;
-
-				/* option length */
-				if(remain_len < sizeof(uint8_t))
-				{
-					rohc_decomp_warn(context, "malformed IPv6 option: malformed option "
-					                 "%u: at least 1 byte required for option length",
-					                 opt_context->proto);
-					goto error;
-				}
-				opt_len = (remain_data[0] + 1) * 8;
-				size++;
-				remain_data++;
-				remain_len--;
-
-				/* option data */
-				if(remain_len < opt_len)
-				{
-					rohc_decomp_warn(context, "malformed IPv6 option: malformed "
-					                 "option %u: %zu bytes available while %u bytes "
-					                 "required", opt_context->proto, remain_len, opt_len);
-					goto error;
-				}
-				opt_context->len = opt_len;
-				opt_context->generic.data_len = opt_len - 2;
-				memcpy(&opt_context->generic.data, remain_data, opt_context->generic.data_len);
-				size += opt_context->generic.data_len;
-#ifndef __clang_analyzer__ /* silent warning about dead in/decrement */
-				remain_data += opt_context->generic.data_len;
-				remain_len -= opt_context->generic.data_len;
-#endif
-			}
-			else if(discriminator != 0x00)
-			{
-				/* malformed packet: discriminator shall be 0x00 or 0x80 */
-				rohc_decomp_warn(context, "IPv6 option replicate part: discriminator "
-				                 "is 0x%02x instead of 0x80 or 0x00", discriminator);
-				goto error;
-			}
-
-			break;
-		}
-		case ROHC_IPPROTO_GRE:  /* TODO: GRE not yet supported */
-		{
-			rohc_decomp_warn(context, "GRE extension header not supported yet");
-			goto error;
-		}
-		case ROHC_IPPROTO_MINE:  /* TODO: MINE not yet supported */
-		{
-			rohc_decomp_warn(context, "MINE extension header not supported yet");
-			goto error;
-		}
-		case ROHC_IPPROTO_AH:  /* TODO: AH not yet supported */
-		{
-			rohc_decomp_warn(context, "AH extension header not supported yet");
-			goto error;
-		}
-		default:
-		{
-			rohc_decomp_warn(context, "unknown extension header not supported yet");
-			goto error;
-		}
-	}
-
-	rohc_decomp_dump_buf(context, "IPv6 option replicate part", rohc_packet, size);
-
-	return size;
-
-error:
-	return -1;
-}
-
 
 /**
  * @brief Decode the TCP replicate part of the ROHC packet.

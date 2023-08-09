@@ -345,57 +345,10 @@ static int tcp_parse_static_ipv6_option(const struct rohc_decomp_ctxt *const con
 
 	switch(protocol)
 	{
-		case ROHC_IPPROTO_HOPOPTS:  // IPv6 Hop-by-Hop options
-		{
-			size = sizeof(ip_hop_opt_static_t);
-			if(rohc_length < size)
-			{
-				rohc_decomp_warn(context, "malformed ROHC packet: too short for "
-				                 "the static part of the IPv6 Hop-by-Hop option");
-				goto error;
-			}
-			opt_context->len = ipv6_opt_get_length((struct ipv6_opt *) ip_opt_static);
-			rohc_decomp_debug(context, "  IPv6 option Hop-by-Hop is %zu-byte long",
-			                  opt_context->len);
-			break;
-		}
-		case ROHC_IPPROTO_ROUTING:  // IPv6 routing header
-		{
-			const ip_rout_opt_static_t *const ip_rout_opt_static =
-				(ip_rout_opt_static_t *) ip_opt_static;
-			size = ipv6_opt_get_length((struct ipv6_opt *) ip_rout_opt_static);
-			if(rohc_length < size)
-			{
-				rohc_decomp_warn(context, "malformed ROHC packet: too short for "
-				                 "the static part of the IPv6 Routing option");
-				goto error;
-			}
-			opt_context->len = size;
-			opt_context->generic.data_len = size - 2;
-			memcpy(&opt_context->generic.data, &ip_rout_opt_static->value,
-			       opt_context->generic.data_len);
-			rohc_decomp_debug(context, "  IPv6 option Routing is %zu-byte long",
-			                  opt_context->len);
-			break;
-		}
 		case ROHC_IPPROTO_GRE:  /* TODO: GRE not yet supported */
 		{
 			rohc_decomp_warn(context, "GRE extension header not supported yet");
 			goto error;
-		}
-		case ROHC_IPPROTO_DSTOPTS:  // IPv6 destination options
-		{
-			size = sizeof(ip_dest_opt_static_t);
-			if(rohc_length < size)
-			{
-				rohc_decomp_warn(context, "malformed ROHC packet: too short for "
-				                 "the static part of the IPv6 Destination option");
-				goto error;
-			}
-			opt_context->len = ipv6_opt_get_length((struct ipv6_opt *) ip_opt_static);
-			rohc_decomp_debug(context, "  IPv6 option Destination is %zu-byte long",
-			                  opt_context->len);
-			break;
 		}
 		case ROHC_IPPROTO_MINE:  /* TODO: MINE not yet supported */
 		{

@@ -37,7 +37,6 @@
 #include "rohc_decomp_internals.h"
 #include "rohc_decomp_detect_packet.h"
 #include "decomp_wlsb.h"
-#include "decomp_list_ipv6.h"
 #include "sdvl.h"
 #include "crc.h"
 
@@ -58,11 +57,6 @@ static int parse_static_part_ip(const struct rohc_decomp_ctxt *const context,
                                 struct rohc_extr_ip_bits *const bits)
 	__attribute__((warn_unused_result, nonnull(1, 2, 4)));
 static int parse_static_part_ipv4(const struct rohc_decomp_ctxt *const context,
-                                  const uint8_t *packet,
-                                  const size_t length,
-                                  struct rohc_extr_ip_bits *const bits)
-	__attribute__((warn_unused_result, nonnull(1, 2, 4)));
-static int parse_static_part_ipv6(const struct rohc_decomp_ctxt *const context,
                                   const uint8_t *packet,
                                   const size_t length,
                                   struct rohc_extr_ip_bits *const bits)
@@ -195,14 +189,6 @@ static bool build_uncomp_ipv4(const struct rohc_decomp_ctxt *const context,
                               size_t *const uncomp_hdrs_len,
                               const size_t payload_size)
 	__attribute__((warn_unused_result, nonnull(1, 3, 5)));
-static bool build_uncomp_ipv6(const struct rohc_decomp_ctxt *const context,
-                              const struct rohc_decoded_ip_values decoded,
-                              uint8_t *const dest,
-                              const size_t uncomp_hdrs_max_len,
-                              size_t *const uncomp_hdrs_len,
-                              const size_t payload_size,
-                              const struct list_decomp *const list_decomp)
-	__attribute__((warn_unused_result, nonnull(1, 3, 5, 7)));
 
 
 /*
@@ -274,6 +260,9 @@ bool rohc_decomp_rfc3095_create(const struct rohc_decomp_ctxt *const context,
                                 void *const trace_cb_priv,
                                 const int profile_id)
 {
+	assert(profile_id>=0);
+	assert(trace_cb_priv==NULL || trace_cb_priv!=NULL);
+	assert(trace_cb==NULL || trace_cb!=NULL);
 	struct rohc_decomp_rfc3095_ctxt *rfc3095_ctxt;
 
 	/* allocate memory for the generic context */
@@ -306,13 +295,6 @@ bool rohc_decomp_rfc3095_create(const struct rohc_decomp_ctxt *const context,
 		           "cannot allocate memory for the inner IP header changes");
 		goto free_outer_ip_changes;
 	}
-
-	/* init the context used to compress the list of IPv6 extension headers
-	 * for the outer and inner IP headers */
-	rohc_decomp_list_ipv6_init(&rfc3095_ctxt->list_decomp1,
-	                           trace_cb, trace_cb_priv, profile_id);
-	rohc_decomp_list_ipv6_init(&rfc3095_ctxt->list_decomp2,
-	                           trace_cb, trace_cb_priv, profile_id);
 
 	/* no default next header */
 	rfc3095_ctxt->next_header_proto = 0;
@@ -817,10 +799,6 @@ static int parse_static_part_ip(const struct rohc_decomp_ctxt *const context,
 	{
 		read = parse_static_part_ipv4(context, packet, length, bits);
 	}
-	else /* IPV6 */
-	{
-		read = parse_static_part_ipv6(context, packet, length, bits);
-	}
 
 	return read;
 
@@ -894,81 +872,6 @@ static int parse_static_part_ipv4(const struct rohc_decomp_ctxt *const context,
 error:
 	return -1;
 }
-
-
-/**
- * @brief Parse the IPv6 static part of a ROHC packet.
- *
- * See 5.7.7.3 in RFC 3095 for details.
- *
- * @param context  The decompression context
- * @param packet   The ROHC packet to parse
- * @param length   The length of the ROHC packet
- * @param bits     OUT: The bits extracted from the IPv6 static part
- * @return         The number of bytes read in the ROHC packet,
- *                 -1 in case of failure
- */
-static int parse_static_part_ipv6(const struct rohc_decomp_ctxt *const context,
-                                  const uint8_t *packet,
-                                  const size_t length,
-                                  struct rohc_extr_ip_bits *const bits)
-{
-	int read = 0; /* number of bytes read from the packet */
-
-	assert(context != NULL);
-	assert(packet != NULL);
-	assert(bits != NULL);
-
-	/* check the minimal length to decode the IPv6 static part */
-	if(length < 36)
-	{
-		rohc_decomp_warn(context, "ROHC packet too small (len = %zu)", length);
-		goto error;
-	}
-
-	/* IP version already read by \ref parse_static_part_ip */
-	rohc_decomp_debug(context, "IP Version = %d", bits->version);
-
-	/* read the flow label */
-	bits->flowid = (GET_BIT_0_3(packet) << 16) |
-	               (GET_BIT_0_7(packet + 1) << 8) |
-	               GET_BIT_0_7(packet + 2);
-	bits->flowid_nr = 20;
-	rohc_decomp_debug(context, "Flow Label = 0x%05x", bits->flowid);
-	packet += 3;
-	read += 3;
-
-	/* read the next header value */
-	bits->proto = GET_BIT_0_7(packet);
-	bits->proto_nr = 8;
-	rohc_decomp_debug(context, "Next Header = 0x%02x", bits->proto);
-	packet++;
-	read++;
-
-	/* read the source IP address */
-	memcpy(bits->saddr, packet, 16);
-	bits->saddr_nr = 128;
-	rohc_decomp_debug(context, "Source Address = " IPV6_ADDR_FORMAT,
-	                  IPV6_ADDR_RAW(bits->saddr));
-	packet += 16;
-	read += 16;
-
-	/* read the destination IP address */
-	memcpy(bits->daddr, packet, 16);
-	bits->daddr_nr = 128;
-	rohc_decomp_debug(context, "Destination Address = " IPV6_ADDR_FORMAT,
-	                  IPV6_ADDR_RAW(bits->daddr));
-#ifndef __clang_analyzer__ /* silent warning about dead increment */
-	packet += 16;
-#endif
-	read += 16;
-
-	return read;
-
-error:
-	return -1;
-}
-
 
 /**
  * @brief Parse the IP dynamic part of a ROHC packet.
@@ -2581,10 +2484,6 @@ rohc_status_t rfc3095_decomp_build_hdrs(const struct rohc_decomp *const decomp,
 		{
 			inner_ip_hdr_len = sizeof(struct ipv4_hdr);
 		}
-		else
-		{
-			inner_ip_hdr_len = sizeof(struct ipv6_hdr);
-		}
 		rohc_decomp_debug(context, "length of inner IP header = %zd bytes",
 		                  inner_ip_hdr_len);
 		ip_payload_len += inner_ip_hdr_len;
@@ -2743,15 +2642,12 @@ static bool build_uncomp_ip(const struct rohc_decomp_ctxt *const context,
 {
 	bool is_ok;
 
+	assert(list_decomp==NULL || list_decomp!=NULL);
+
 	if(decoded.version == IPV4)
 	{
 		is_ok = build_uncomp_ipv4(context, decoded, dest, uncomp_hdrs_max_len,
 		                          uncomp_hdrs_len, payload_size);
-	}
-	else
-	{
-		is_ok = build_uncomp_ipv6(context, decoded, dest, uncomp_hdrs_max_len,
-		                          uncomp_hdrs_len, payload_size, list_decomp);
 	}
 
 	return is_ok;
@@ -2821,86 +2717,6 @@ static bool build_uncomp_ipv4(const struct rohc_decomp_ctxt *const context,
 error:
 	return false;
 }
-
-
-/**
- * @brief Build an uncompressed IPv6 header.
- *
- * @param context               The decompression context
- * @param decoded               The decoded IPv6 fields
- * @param dest                  The buffer to store the IPv6 header
- * @param uncomp_hdrs_max_len   The max length of the IPv6 header
- * @param[out] uncomp_hdrs_len  The length of the IPv6 header
- * @param payload_size          The length of the IPv6 payload
- * @param list_decomp           The list decompressor
- * @return                      true if the IPv6 header is successfully built,
- *                              false if an error occurs
- */
-static bool build_uncomp_ipv6(const struct rohc_decomp_ctxt *const context,
-                              const struct rohc_decoded_ip_values decoded,
-                              uint8_t *const dest,
-                              const size_t uncomp_hdrs_max_len,
-                              size_t *const uncomp_hdrs_len,
-                              const size_t payload_size,
-                              const struct list_decomp *const list_decomp)
-{
-	struct ipv6_hdr *const ip = (struct ipv6_hdr *) dest;
-	size_t ext_size;
-
-	if(uncomp_hdrs_max_len < sizeof(struct ipv6_hdr))
-	{
-		rohc_decomp_warn(context, "uncompressed packet too small for IPv6 "
-		                 "header");
-		goto error;
-	}
-
-	/* static fields */
-	ip->version = decoded.version;
-	ipv6_set_flow_label(ip, decoded.flowid);
-	ip->nh = decoded.proto;
-	memcpy(&ip->saddr, decoded.saddr, 16);
-	memcpy(&ip->daddr, decoded.daddr, 16);
-
-	/* if there are extension headers, set Next Header in base header
-	 * according to the first one */
-	if(list_decomp->pkt_list.id != ROHC_LIST_GEN_ID_NONE &&
-	   list_decomp->pkt_list.items_nr > 0)
-	{
-		ip->nh = (uint8_t) list_decomp->pkt_list.items[0]->type;
-		rohc_decomp_debug(context, "set Next Header in IPv6 base header to "
-		                  "0x%02x because of IPv6 extension header", ip->nh);
-	}
-
-	/* dynamic fields */
-	ipv6_set_tc(ip, decoded.tos);
-	ip->hl = decoded.ttl;
-
-	/* extension list */
-	if(list_decomp->pkt_list.id != ROHC_LIST_GEN_ID_NONE)
-	{
-		/* TODO: check dest max size */
-		ext_size = list_decomp->build_uncomp_item(list_decomp, decoded.proto,
-		                                          dest + sizeof(struct ipv6_hdr));
-	}
-	else
-	{
-		/* no extension header */
-		ext_size = 0;
-	}
-
-	/* inferred fields */
-	ip->plen = rohc_hton16(payload_size + ext_size);
-	rohc_decomp_debug(context, "Payload Length = 0x%04x (extensions = %zu "
-	                  "bytes, payload = %zu bytes)",
-	                  rohc_ntoh16(ip->plen), ext_size, payload_size);
-
-	*uncomp_hdrs_len = sizeof(struct ipv6_hdr) + ext_size;
-	return true;
-
-error:
-	return false;
-}
-
 
 /**
  * @brief Check whether the CRC on uncompressed header is correct or not
@@ -3362,9 +3178,7 @@ static bool decode_ip_values_from_bits(const struct rohc_decomp_ctxt *const cont
 	const bool new_inner_ip_hdr = !!(ip_hdr_pos == 2 && !rfc3095_ctxt->multiple_ip);
 	const bool ip_6to4_switch =
 		!!(ip_get_version(&ctxt->ip) == IPV6 && bits->version == IPV4);
-	const bool ip_4to6_switch =
-		!!(ip_get_version(&ctxt->ip) == IPV4 && bits->version == IPV6);
-
+	
 	assert(ctxt != NULL);
 	assert(decoded != NULL);
 
@@ -3632,75 +3446,6 @@ static bool decode_ip_values_from_bits(const struct rohc_decomp_ctxt *const cont
 		rohc_decomp_debug(context, "decoded %s dst address = " IPV4_ADDR_FORMAT,
 		                  descr, IPV4_ADDR_RAW(decoded->daddr));
 	}
-	else /* IPV6 */
-	{
-		/* flow label */
-		if(bits->flowid_nr > 0)
-		{
-			/* take value from base header */
-			assert(bits->flowid_nr == 20);
-			decoded->flowid = bits->flowid;
-		}
-		else if(new_inner_ip_hdr || ip_4to6_switch)
-		{
-			rohc_decomp_warn(context, "failed to decode inner IP header: no "
-			                 "information in context and no flow ID bit in packet");
-			goto error;
-		}
-		else
-		{
-			/* keep context value */
-			decoded->flowid = ip_get_flow_label(&ctxt->ip);
-		}
-		rohc_decomp_debug(context, "decoded %s flow label = 0x%05x", descr,
-		                  decoded->flowid);
-
-		/* source address */
-		if(bits->saddr_nr > 0)
-		{
-			/* take value from base header */
-			assert(bits->saddr_nr == 128);
-			memcpy(decoded->saddr, bits->saddr, 16);
-		}
-		else if(new_inner_ip_hdr)
-		{
-			rohc_decomp_warn(context, "failed to decode inner IP header: no "
-			                 "information in context and no source address bit "
-			                 "in packet");
-			goto error;
-		}
-		else
-		{
-			/* keep context value */
-			const struct ipv6_addr *saddr_ctxt = ipv6_get_saddr(&ctxt->ip);
-			memcpy(decoded->saddr, saddr_ctxt, 16);
-		}
-		rohc_decomp_debug(context, "decoded %s src address = " IPV6_ADDR_FORMAT,
-		                  descr, IPV6_ADDR_RAW(decoded->saddr));
-
-		/* destination address */
-		if(bits->daddr_nr > 0)
-		{
-			/* take value from base header */
-			assert(bits->daddr_nr == 128);
-			memcpy(decoded->daddr, bits->daddr, 16);
-		}
-		else if(new_inner_ip_hdr)
-		{
-			rohc_decomp_warn(context, "failed to decode inner IP header: no "
-			                 "information in context and no destination address "
-			                 "bit in packet");
-			goto error;
-		}
-		else
-		{
-			/* keep context value */
-			const struct ipv6_addr *daddr_ctxt = ipv6_get_daddr(&ctxt->ip);
-			memcpy(decoded->daddr, daddr_ctxt, 16);
-		}
-		rohc_decomp_debug(context, "decoded %s dst address = " IPV6_ADDR_FORMAT,
-		                  descr, IPV6_ADDR_RAW(decoded->daddr));
-	}
 
 	return true;
 
@@ -3856,10 +3601,6 @@ void rfc3095_decomp_update_ctxt(struct rohc_decomp_ctxt *const context,
 		rfc3095_ctxt->outer_ip_changes->rnd = decoded->outer_ip.rnd;
 		rfc3095_ctxt->outer_ip_changes->sid = decoded->outer_ip.sid;
 	}
-	else /* IPV6 */
-	{
-		ip_set_flow_label(&rfc3095_ctxt->outer_ip_changes->ip, decoded->outer_ip.flowid);
-	}
 
 	/* update fields related to the inner IP header (if any) */
 	if(rfc3095_ctxt->multiple_ip)
@@ -3879,10 +3620,6 @@ void rfc3095_decomp_update_ctxt(struct rohc_decomp_ctxt *const context,
 			rfc3095_ctxt->inner_ip_changes->nbo = decoded->inner_ip.nbo;
 			rfc3095_ctxt->inner_ip_changes->rnd = decoded->inner_ip.rnd;
 			rfc3095_ctxt->inner_ip_changes->sid = decoded->inner_ip.sid;
-		}
-		else /* IPV6 */
-		{
-			ip_set_flow_label(&rfc3095_ctxt->inner_ip_changes->ip, decoded->inner_ip.flowid);
 		}
 		rfc3095_ctxt->inner_ip_changes->ip.nl.proto = decoded->inner_ip.proto;
 	}

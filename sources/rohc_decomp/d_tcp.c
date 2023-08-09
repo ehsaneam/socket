@@ -313,11 +313,6 @@ static bool d_tcp_build_ipv4_hdr(const struct rohc_decomp_ctxt *const context,
                                  struct rohc_buf *const uncomp_packet,
                                  size_t *const ip_hdr_len)
 	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4)));
-static bool d_tcp_build_ipv6_hdr(const struct rohc_decomp_ctxt *const context,
-                                 const struct rohc_tcp_decoded_ip_values *const decoded,
-                                 struct rohc_buf *const uncomp_packet,
-                                 size_t *const ip_hdr_len)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4)));
 static bool d_tcp_build_ip_hdr(const struct rohc_decomp_ctxt *const context,
                                const struct rohc_tcp_decoded_ip_values *const decoded,
                                struct rohc_buf *const uncomp_packet,
@@ -3145,32 +3140,6 @@ static bool d_tcp_decode_bits_ip_hdr(const struct rohc_decomp_ctxt *const contex
 	assert(ip_bits->opts_nr <= ROHC_TCP_MAX_IP_EXT_HDRS);
 	ip_decoded->opts_nr = ip_bits->opts_nr;
 	ip_decoded->opts_len = ip_bits->opts_len;
-	if(ip_bits->version == IPV6)
-	{
-		size_t ext_pos;
-
-		for(ext_pos = 0; ext_pos < ip_decoded->opts_nr; ext_pos++)
-		{
-			switch(ip_bits->opts[ext_pos].proto)
-			{
-				case ROHC_IPPROTO_HOPOPTS:
-				case ROHC_IPPROTO_DSTOPTS:
-				case ROHC_IPPROTO_ROUTING:
-					if(ip_bits->opts[ext_pos].generic.data_len > 0)
-					{
-						memcpy(&(ip_decoded->opts[ext_pos]), &(ip_bits->opts[ext_pos]),
-						       sizeof(ip_option_context_t));
-					}
-					break;
-				default:
-					assert(0);
-					goto error;
-			}
-		}
-		rohc_decomp_debug(context, "  %zu extension headers on %zu bytes",
-		                  ip_decoded->opts_nr, ip_decoded->opts_len);
-	}
-
 	return true;
 
 error:
@@ -3890,14 +3859,6 @@ static bool d_tcp_build_ip_hdr(const struct rohc_decomp_ctxt *const context,
 			goto error;
 		}
 	}
-	else
-	{
-		if(!d_tcp_build_ipv6_hdr(context, decoded, uncomp_packet, ip_hdr_len))
-		{
-			rohc_decomp_warn(context, "failed to build uncompressed IPv6 header");
-			goto error;
-		}
-	}
 
 	return true;
 
@@ -3974,93 +3935,6 @@ static bool d_tcp_build_ipv4_hdr(const struct rohc_decomp_ctxt *const context,
 error:
 	return false;
 }
-
-
-/**
- * @brief Build one single uncompressed IPv6 header
- *
- * Build one single uncompressed IPv6 header - including IPv6 extension
- * headers - from the context and packet informations.
- *
- * @param context             The decompression context
- * @param decoded             The values decoded from the ROHC packet
- * @param[out] uncomp_packet  The uncompressed packet being built
- * @param[out] ip_hdr_len     The length of the IPv6 header (in bytes)
- * @return                    true if IPv6 header was successfully built,
- *                            false if the output \e uncomp_packet was not
- *                            large enough
- */
-static bool d_tcp_build_ipv6_hdr(const struct rohc_decomp_ctxt *const context,
-                                 const struct rohc_tcp_decoded_ip_values *const decoded,
-                                 struct rohc_buf *const uncomp_packet,
-                                 size_t *const ip_hdr_len)
-{
-	struct ipv6_hdr *const ipv6 = (struct ipv6_hdr *) rohc_buf_data(*uncomp_packet);
-	const size_t hdr_len = sizeof(struct ipv6_hdr);
-	const size_t ipv6_exts_len = decoded->opts_len;
-	const size_t full_ipv6_len = hdr_len + ipv6_exts_len;
-	size_t all_opts_len;
-	size_t i;
-
-	rohc_decomp_debug(context, "  build %zu-byte IPv6 header (with %zu bytes of "
-	                  "extension headers)", full_ipv6_len, ipv6_exts_len);
-
-	if(rohc_buf_avail_len(*uncomp_packet) < full_ipv6_len)
-	{
-		rohc_decomp_warn(context, "output buffer too small for the %zu-byte IPv6 "
-		                 "header (with %zu bytes of extension headers)",
-		                 full_ipv6_len, ipv6_exts_len);
-		goto error;
-	}
-
-	/* static part */
-	ipv6->version = decoded->version;
-	rohc_decomp_debug(context, "    version = %u", ipv6->version);
-	ipv6_set_flow_label(ipv6, decoded->flowid);
-	rohc_decomp_debug(context, "    flow label = 0x%01x%04x",
-	                  ipv6->flow1, rohc_ntoh16(ipv6->flow2));
-	ipv6->nh = decoded->proto;
-	memcpy(&ipv6->saddr, decoded->saddr, sizeof(struct ipv6_addr));
-	memcpy(&ipv6->daddr, decoded->daddr, sizeof(struct ipv6_addr));
-
-	/* dynamic part */
-	ipv6_set_dscp_ecn(ipv6, decoded->dscp, decoded->ecn_flags);
-	ipv6->hl = decoded->ttl;
-	rohc_decomp_debug(context, "    DSCP = 0x%02x, ip_ecn_flags = %d, HL = %u",
-	                  decoded->dscp, decoded->ecn_flags, ipv6->hl);
-
-	/* total length will be computed once all headers are built */
-
-	/* skip IPv6 header */
-	uncomp_packet->len += hdr_len;
-	rohc_buf_pull(uncomp_packet, hdr_len);
-	*ip_hdr_len += hdr_len;
-
-	/* copy IPv6 extension headers */
-	all_opts_len = 0;
-	for(i = 0; i < decoded->opts_nr; i++)
-	{
-		const ip_option_context_t *const opt = &(decoded->opts[i]);
-		rohc_decomp_debug(context, "build %zu-byte IPv6 extension header #%zu",
-		                  opt->len, i + 1);
-		uncomp_packet->len += 2;
-		rohc_buf_byte_at(*uncomp_packet, 0) = opt->nh_proto;
-		assert((opt->len % 8) == 0);
-		assert((opt->len / 8) > 0);
-		rohc_buf_byte_at(*uncomp_packet, 1) = opt->len / 8 - 1;
-		rohc_buf_append(uncomp_packet, opt->generic.data, opt->len - 2);
-		rohc_buf_pull(uncomp_packet, opt->len);
-		*ip_hdr_len += opt->len;
-		all_opts_len += opt->len;
-	}
-	assert(all_opts_len == ipv6_exts_len);
-
-	return true;
-
-error:
-	return false;
-}
-
 
 /**
  * @brief Build the uncompressed TCP header
@@ -4224,15 +4098,6 @@ static rohc_status_t d_tcp_build_hdrs(const struct rohc_decomp *const decomp,
 			rohc_decomp_debug(context, "    IP checksum = 0x%04x on %zu bytes",
 			                  rohc_ntoh16(ipv4->check), ipv4->ihl * sizeof(uint32_t));
 			rohc_buf_pull(uncomp_hdrs, ipv4->ihl * sizeof(uint32_t));
-		}
-		else
-		{
-			struct ipv6_hdr *const ipv6 = (struct ipv6_hdr *) rohc_buf_data(*uncomp_hdrs);
-			rohc_buf_pull(uncomp_hdrs, sizeof(struct ipv6_hdr));
-			ipv6->plen = rohc_hton16(uncomp_hdrs->len + payload_len);
-			rohc_decomp_debug(context, "    IPv6 payload length = %u",
-			                  rohc_ntoh16(ipv6->plen));
-			rohc_buf_pull(uncomp_hdrs, ip_decoded->opts_len);
 		}
 	}
 	/* unhide the IP headers */

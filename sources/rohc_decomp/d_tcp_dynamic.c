@@ -282,7 +282,9 @@ static int tcp_parse_dynamic_ipv6_option(const struct rohc_decomp_ctxt *const co
                                          const size_t rohc_length)
 {
 	size_t remain_len = rohc_length;
+	remain_len = 0;
 	size_t size;
+	size = remain_len;
 
 	rohc_decomp_debug(context, "parse dynamic part of the %zu-byte IPv6 extension "
 	                  "header '%s' (%u)", opt_context->len,
@@ -290,24 +292,6 @@ static int tcp_parse_dynamic_ipv6_option(const struct rohc_decomp_ctxt *const co
 
 	switch(opt_context->proto)
 	{
-		case ROHC_IPPROTO_HOPOPTS:  // IPv6 Hop-by-Hop options
-		case ROHC_IPPROTO_DSTOPTS:  // IPv6 destination options
-		{
-			size = opt_context->len - 2;
-			if(remain_len < size)
-			{
-				rohc_decomp_warn(context, "malformed IPv6 option: malformed "
-				                 "option %u: %zu bytes available while %zu bytes "
-				                 "required", opt_context->proto, remain_len, size);
-				goto error;
-			}
-			opt_context->generic.data_len = size;
-			memcpy(&opt_context->generic.data, rohc_packet, size);
-#ifndef __clang_analyzer__ /* silent warning about dead in/decrement */
-			remain_len -= size;
-#endif
-			break;
-		}
 		case ROHC_IPPROTO_ROUTING:  // IPv6 routing header
 		{
 			size = 0;

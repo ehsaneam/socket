@@ -26,7 +26,6 @@
 #ifndef ROHC_COMMON_LIST_H
 #define ROHC_COMMON_LIST_H
 
-#include "ipv6.h"
 #include "ip_numbers.h"
 
 #include <stdlib.h>

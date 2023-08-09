@@ -40,19 +40,6 @@ static int tcp_code_static_ipv4_part(const struct rohc_comp_ctxt *const context,
                                      const size_t rohc_max_len)
 	__attribute__((warn_unused_result, nonnull(1, 2, 3)));
 
-static int tcp_code_static_ipv6_part(const struct rohc_comp_ctxt *const context,
-                                     const struct ipv6_hdr *const ipv6,
-                                     uint8_t *const rohc_data,
-                                     const size_t rohc_max_len)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3)));
-
-static int tcp_code_static_ipv6_opt_part(const struct rohc_comp_ctxt *const context,
-                                         const struct ipv6_opt *const ipv6_opt,
-                                         const uint8_t protocol,
-                                         uint8_t *const rohc_data,
-                                         const size_t rohc_max_len)
-	__attribute__((warn_unused_result, nonnull(1, 2, 4)));
-
 static int tcp_code_static_tcp_part(const struct rohc_comp_ctxt *const context,
                                     const struct tcphdr *const tcp,
                                     uint8_t *const rohc_data,
@@ -90,7 +77,6 @@ int tcp_code_static_part(struct rohc_comp_ctxt *const context,
 	for(ip_hdr_pos = 0; ip_hdr_pos < tcp_context->ip_contexts_nr; ip_hdr_pos++)
 	{
 		const struct ip_hdr *const ip_hdr = (struct ip_hdr *) remain_data;
-		size_t ip_ext_pos;
 
 		/* retrieve IP version */
 		assert(remain_len >= sizeof(struct ip_hdr));
@@ -115,53 +101,6 @@ int tcp_code_static_part(struct rohc_comp_ctxt *const context,
 
 			remain_data += sizeof(struct ipv4_hdr);
 			remain_len -= sizeof(struct ipv4_hdr);
-		}
-		else if(ip_hdr->version == IPV6)
-		{
-			const struct ipv6_hdr *const ipv6 = (struct ipv6_hdr *) remain_data;
-			uint8_t protocol;
-
-			assert(remain_len >= sizeof(struct ipv6_hdr));
-
-			ret = tcp_code_static_ipv6_part(context, ipv6, rohc_remain_data,
-			                                rohc_remain_len);
-			if(ret < 0)
-			{
-				rohc_comp_warn(context, "failed to build the IPv6 base header part "
-				               "of the static chain");
-				goto error;
-			}
-			rohc_remain_data += ret;
-			rohc_remain_len -= ret;
-
-			protocol = ipv6->nh;
-			remain_data += sizeof(struct ipv6_hdr);
-			remain_len -= sizeof(struct ipv6_hdr);
-
-			for(ip_ext_pos = 0;
-			    ip_ext_pos < tcp_context->tmp.ip_exts_nr[ip_hdr_pos];
-			    ip_ext_pos++)
-			{
-				const struct ipv6_opt *const ipv6_opt = (struct ipv6_opt *) remain_data;
-				const size_t opt_len = ipv6_opt_get_length(ipv6_opt);
-
-				rohc_comp_debug(context, "IPv6 option #%zu: type %u / length %zu",
-				                ip_ext_pos + 1, protocol, opt_len);
-				ret = tcp_code_static_ipv6_opt_part(context, ipv6_opt, protocol,
-				                                    rohc_remain_data, rohc_remain_len);
-				if(ret < 0)
-				{
-					rohc_comp_warn(context, "failed to build the IPv6 extension header "
-					               "part of the static chain");
-					goto error;
-				}
-				rohc_remain_data += ret;
-				rohc_remain_len -= ret;
-
-				protocol = ipv6_opt->next_header;
-				remain_data += opt_len;
-				remain_len -= opt_len;
-			}
 		}
 		else
 		{
@@ -237,153 +176,6 @@ static int tcp_code_static_ipv4_part(const struct rohc_comp_ctxt *const context,
 error:
 	return -1;
 }
-
-
-/**
- * @brief Build the static part of the IPv6 header
- *
- * @param context         The compression context
- * @param ipv6            The IPv6 header
- * @param[out] rohc_data  The ROHC packet being built
- * @param rohc_max_len    The max remaining length in the ROHC buffer
- * @return                The length appended in the ROHC buffer if positive,
- *                        -1 in case of error
- */
-static int tcp_code_static_ipv6_part(const struct rohc_comp_ctxt *const context,
-                                     const struct ipv6_hdr *const ipv6,
-                                     uint8_t *const rohc_data,
-                                     const size_t rohc_max_len)
-{
-	size_t ipv6_static_len;
-
-	if(ipv6->flow1 == 0 && ipv6->flow2 == 0)
-	{
-		ipv6_static1_t *const ipv6_static1 = (ipv6_static1_t *) rohc_data;
-
-		ipv6_static_len = sizeof(ipv6_static1_t);
-		if(rohc_max_len < ipv6_static_len)
-		{
-			rohc_comp_warn(context, "ROHC buffer too small for the IPv6 static part: "
-			               "%zu bytes required, but only %zu bytes available",
-			               ipv6_static_len, rohc_max_len);
-			goto error;
-		}
-
-		ipv6_static1->version_flag = 1;
-		ipv6_static1->reserved1 = 0;
-		ipv6_static1->flow_label_enc_discriminator = 0;
-		ipv6_static1->reserved2 = 0;
-		ipv6_static1->next_header = ipv6->nh;
-		memcpy(ipv6_static1->src_addr, &ipv6->saddr, sizeof(struct ipv6_addr));
-		memcpy(ipv6_static1->dst_addr, &ipv6->daddr, sizeof(struct ipv6_addr));
-	}
-	else
-	{
-		ipv6_static2_t *const ipv6_static2 = (ipv6_static2_t *) rohc_data;
-
-		ipv6_static_len = sizeof(ipv6_static2_t);
-		if(rohc_max_len < ipv6_static_len)
-		{
-			rohc_comp_warn(context, "ROHC buffer too small for the IPv6 static part: "
-			               "%zu bytes required, but only %zu bytes available",
-			               ipv6_static_len, rohc_max_len);
-			goto error;
-		}
-
-		ipv6_static2->version_flag = 1;
-		ipv6_static2->reserved = 0;
-		ipv6_static2->flow_label_enc_discriminator = 1;
-		ipv6_static2->flow_label1 = ipv6->flow1;
-		ipv6_static2->flow_label2 = ipv6->flow2;
-		ipv6_static2->next_header = ipv6->nh;
-		memcpy(ipv6_static2->src_addr, &ipv6->saddr, sizeof(struct ipv6_addr));
-		memcpy(ipv6_static2->dst_addr, &ipv6->daddr, sizeof(struct ipv6_addr));
-	}
-	rohc_comp_debug(context, "IPv6 next header = %u", ipv6->nh);
-
-	rohc_comp_dump_buf(context, "IPv6 static part", rohc_data, ipv6_static_len);
-
-	return ipv6_static_len;
-
-error:
-	return -1;
-}
-
-
-/**
- * @brief Build the static part of the IPv6 option header
- *
- * @param context         The compression context
- * @param ipv6_opt        The IPv6 extension header
- * @param protocol        The protocol of the IPv6 extension header
- * @param[out] rohc_data  The ROHC packet being built
- * @param rohc_max_len    The max remaining length in the ROHC buffer
- * @return                The length appended in the ROHC buffer if positive,
- *                        -1 in case of error
- */
-static int tcp_code_static_ipv6_opt_part(const struct rohc_comp_ctxt *const context,
-                                         const struct ipv6_opt *const ipv6_opt,
-                                         const uint8_t protocol,
-                                         uint8_t *const rohc_data,
-                                         const size_t rohc_max_len)
-{
-	ip_opt_static_t *const ip_opt_static = (ip_opt_static_t *) rohc_data;
-	size_t ipv6_opt_static_len = sizeof(ip_opt_static_t);
-
-	if(rohc_max_len < ipv6_opt_static_len)
-	{
-		rohc_comp_warn(context, "ROHC buffer too small for the IPv6 extension "
-		               "header static part: %zu bytes required, but only %zu bytes "
-		               "available", ipv6_opt_static_len, rohc_max_len);
-		goto error;
-	}
-
-	/* next header and length are common to all options */
-	ip_opt_static->next_header = ipv6_opt->next_header;
-	ip_opt_static->length = ipv6_opt->length;
-
-	switch(protocol)
-	{
-		case ROHC_IPPROTO_HOPOPTS: /* IPv6 Hop-by-Hop option */
-		case ROHC_IPPROTO_DSTOPTS: /* IPv6 destination option */
-		{
-			/* no payload transmitted for those options, nothing to do */
-			break;
-		}
-		case ROHC_IPPROTO_ROUTING: /* IPv6 routing header */
-		{
-			ip_rout_opt_static_t *const ip_rout_opt_static =
-				(ip_rout_opt_static_t *) rohc_data;
-			ipv6_opt_static_len = ipv6_opt_get_length(ipv6_opt);
-			if(rohc_max_len < ipv6_opt_static_len)
-			{
-				rohc_comp_warn(context, "ROHC buffer too small for the IPv6 extension "
-				               "header static part: %zu bytes required, but only %zu "
-				               "bytes available", ipv6_opt_static_len, rohc_max_len);
-				goto error;
-			}
-			memcpy(ip_rout_opt_static->value, ipv6_opt->value, ipv6_opt_static_len - 2);
-			break;
-		}
-		case ROHC_IPPROTO_GRE:  /* TODO: GRE not yet supported */
-		case ROHC_IPPROTO_MINE: /* TODO: MINE not yet supported */
-		case ROHC_IPPROTO_AH:   /* TODO: AH not yet supported */
-		default:
-		{
-			assert(0);
-			goto error;
-		}
-	}
-
-	rohc_comp_dump_buf(context, "IPv6 option static part",
-	                   rohc_data, ipv6_opt_static_len);
-
-	return ipv6_opt_static_len;
-
-error:
-	return -1;
-}
-
 
 /**
  * @brief Build the static part of the TCP header

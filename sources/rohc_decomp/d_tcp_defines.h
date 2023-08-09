@@ -39,18 +39,6 @@
 #include <stdint.h>
 
 /**
- * @brief Define the IPv6 option context for Destination, Hop-by-Hop
- *        and Routing option
- */
-typedef struct __attribute__((packed))
-{
-	size_t data_len;
-	uint8_t data[IPV6_OPT_CTXT_LEN_MAX];
-
-} ipv6_generic_option_context_t;
-
-
-/**
  * @brief Define the IPv6 option context for GRE option
  */
 typedef struct __attribute__((packed)) ipv6_gre_option_context
@@ -100,7 +88,6 @@ typedef struct
 
 	union
 	{
-		ipv6_generic_option_context_t generic; /**< IPv6 generic extension header */
 		ipv6_gre_option_context_t gre;         /**< IPv6 GRE extension header */
 		ipv6_mime_option_context_t mime;       /**< IPv6 MIME extension header */
 		ipv6_ah_option_context_t ah;           /**< IPv6 AH extension header */

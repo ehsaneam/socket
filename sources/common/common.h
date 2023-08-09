@@ -19,8 +19,6 @@
 
 #define SOCKET_INTERFACE    "lo"
 #define SOCKET_PORT         12345
-#define IPPROTO_RTP         200
-
 #define DBG_INFO        3
 #define DBG_WARNING     2
 #define DBG_ERROR       1

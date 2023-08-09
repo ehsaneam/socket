@@ -108,19 +108,6 @@ struct tcp_tmp_variables
 	bool ecn_used_changed;
 };
 
-
-/**
- * @brief Define the IPv6 generic option context.
- */
-typedef struct __attribute__((packed)) ipv6_generic_option_context
-{
-	size_t option_length;
-	uint8_t next_header;
-	uint8_t data[IPV6_OPT_CTXT_LEN_MAX];
-
-} ipv6_generic_option_context_t;
-
-
 /**
  * @brief Define the common IP header context to IPv4 and IPv6.
  */
@@ -171,7 +158,6 @@ typedef struct __attribute__((packed)) ipv4_context
 /** The compression context for one IPv6 extension header */
 typedef union
 {
-	ipv6_generic_option_context_t generic; /**< IPv6 generic extension header */
 	/* TODO: GRE not yet supported */
 	/* TODO: MINE not yet supported */
 	/* TODO: AH not yet supported */
