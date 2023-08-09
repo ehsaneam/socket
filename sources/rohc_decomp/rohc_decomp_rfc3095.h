@@ -160,53 +160,6 @@ struct rohc_extr_bits
 
 	rohc_tristate_t cfp;       /**< TODO */
 	rohc_tristate_t cfi;       /**< TODO */
-	
-	/* bits below are for RTP profile only
-	   @todo TODO should be moved in d_rtp.c */
-
-	/* RTP version */
-	uint8_t rtp_version:2;  /**< The RTP version bits found in dynamic chain
-	                             of IR/IR-DYN header */
-	size_t rtp_version_nr;  /**< The number of RTP version bits */
-
-	/* RTP Padding (R-P) flag */
-	uint8_t rtp_p:1;        /**< The RTP Padding bits found in dynamic chain
-	                             of IR/IR-DYN header or in extension header */
-	size_t rtp_p_nr;        /**< The number of RTP Padding bits */
-
-	/* RTP eXtension (R-X) flag */
-	uint8_t rtp_x:1;        /**< The RTP eXtension (R-X) bits found in
-	                             extension header */
-	size_t rtp_x_nr;        /**< The number of RTP X bits */
-
-	/* RTP CSRC Count (CC) */
-	uint8_t rtp_cc:4;       /**< The RTP CSRC Count bits found in dynamic
-	                             chain of IR/IR-DYN header */
-	size_t rtp_cc_nr;       /**< The number of the RTP CSRC Count bits */
-
-	/* RTP Marker (M) flag */
-	uint8_t rtp_m:1;        /**< The RTP Marker (M) bits found in dynamic chain
-	                             of IR/IR-DYN header, UO* base header and
-	                             extension header */
-	size_t rtp_m_nr;        /**< The number of the RTP Marker (M) bits */
-
-	/* RTP Payload Type (RTP-PT) */
-	uint8_t rtp_pt:7;       /**< The RTP Payload Type (PT) bits found in
-	                             dynamic chain of IR/IR-DYN header or in
-	                             extension header */
-	size_t rtp_pt_nr;       /**< The number of RTP PT bits found in header */
-
-	/* RTP TimeStamp (TS) */
-	uint32_t ts;            /**< The TS bits found in dynamic chain of
-	                             IR/IR-DYN header, in UO* base header or in
-	                             extension header */
-	size_t ts_nr;           /**< The number of TS bits found in ROHC header */
-	bool is_ts_scaled;      /**< Whether TS is transmitted scaled or not */
-
-	/* RTP Synchronization SouRCe (SSRC)  identifier */
-	uint32_t rtp_ssrc;      /**< The SSRC bits found in static chain of
-	                             IR header */
-	size_t rtp_ssrc_nr;     /**< The number of SSRC bits found in header */
 };
 
 
@@ -261,17 +214,6 @@ struct rohc_decoded_values
 	   @todo TODO should be moved in d_udp_lite.c */
 	rohc_tristate_t cfp;       /**< TODO */
 	rohc_tristate_t cfi;       /**< TODO */
-
-	/* bits below are for RTP profile only
-	   @todo TODO should be moved in d_rtp.c */
-	uint8_t rtp_version:2;  /**< The decoded RTP version */
-	uint8_t rtp_p:1;        /**< The decoded RTP Padding (R-P) flag */
-	uint8_t rtp_x:1;        /**< The decoded RTP eXtension (R-X) flag */
-	uint8_t rtp_cc:4;       /**< The decoded RTP CSRC Count */
-	uint8_t rtp_m:1;        /**< The decoded RTP Marker (M) flag */
-	uint8_t rtp_pt:7;       /**< The decoded RTP Payload Type (RTP-PT) */
-	uint32_t ts;            /**< The decoded RTP TimeStamp (TS) value */
-	uint32_t rtp_ssrc;      /**< The decoded SSRC value */
 };
 
 

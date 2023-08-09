@@ -2324,8 +2324,6 @@ static int parse_extension0(const struct rohc_decomp_ctxt *const context,
 	switch(packet_type)
 	{
 		case ROHC_PACKET_UOR_2:
-		case ROHC_PACKET_UOR_2_ID:
-		case ROHC_PACKET_UO_1_ID:
 		{
 			/* sanity check */
 			assert(innermost_ip_hdr == ROHC_IP_HDR_FIRST ||
@@ -2343,14 +2341,6 @@ static int parse_extension0(const struct rohc_decomp_ctxt *const context,
 			}
 			break;
 		}
-
-		case ROHC_PACKET_UOR_2_TS:
-		{
-			/* read 3 bits of TS */
-			APPEND_TS_BITS(ROHC_EXT_0, bits, GET_BIT_0_2(rohc_data), 3);
-			break;
-		}
-
 		default:
 		{
 			rohc_decomp_warn(context, "bad packet type (%d)", packet_type);
@@ -2432,49 +2422,6 @@ static int parse_extension1(const struct rohc_decomp_ctxt *const context,
 			}
 			break;
 		}
-		case ROHC_PACKET_UOR_2_TS:
-		{
-			/* sanity check */
-			assert(innermost_ip_hdr == ROHC_IP_HDR_FIRST ||
-			       innermost_ip_hdr == ROHC_IP_HDR_SECOND);
-			/* parse 3 bits of TS */
-			APPEND_TS_BITS(ROHC_EXT_1, bits, GET_BIT_0_2(rohc_data), 3);
-			/* parse 8 bits of the innermost IP-ID */
-			if(innermost_ip_hdr == ROHC_IP_HDR_FIRST)
-			{
-				APPEND_OUTER_IP_ID_BITS(ROHC_EXT_1, bits,
-				                        GET_BIT_0_7(rohc_data + 1), 8);
-			}
-			else
-			{
-				APPEND_INNER_IP_ID_BITS(ROHC_EXT_1, bits,
-				                        GET_BIT_0_7(rohc_data + 1), 8);
-			}
-			break;
-		}
-
-		case ROHC_PACKET_UOR_2_ID:
-		case ROHC_PACKET_UO_1_ID:
-		{
-			/* sanity check */
-			assert(innermost_ip_hdr == ROHC_IP_HDR_FIRST ||
-			       innermost_ip_hdr == ROHC_IP_HDR_SECOND);
-			/* parse 3 bits of the innermost IP-ID */
-			if(innermost_ip_hdr == ROHC_IP_HDR_FIRST)
-			{
-				APPEND_OUTER_IP_ID_BITS(ROHC_EXT_1, bits,
-				                        GET_BIT_0_2(rohc_data), 3);
-			}
-			else
-			{
-				APPEND_INNER_IP_ID_BITS(ROHC_EXT_1, bits,
-				                        GET_BIT_0_2(rohc_data), 3);
-			}
-			/* parse 8 bits of TS */
-			APPEND_TS_BITS(ROHC_EXT_1, bits, GET_BIT_0_7(rohc_data + 1), 8);
-			break;
-		}
-
 		default:
 		{
 			rohc_decomp_warn(context, "bad packet type (%d)", packet_type);
@@ -2521,6 +2468,7 @@ static int parse_extension2(const struct rohc_decomp_ctxt *const context,
 
 	assert(rohc_data != NULL);
 	assert(bits != NULL);
+	assert(innermost_ip_hdr>=0);
 
 	rohc_decomp_debug(context, "decode %s extension 2",
 	                  rohc_get_packet_descr(packet_type));
@@ -2550,54 +2498,6 @@ static int parse_extension2(const struct rohc_decomp_ctxt *const context,
 			                        GET_BIT_0_7(rohc_data + 2), 8);
 			break;
 		}
-
-		case ROHC_PACKET_UOR_2_TS:
-		{
-			/* sanity check */
-			assert(innermost_ip_hdr == ROHC_IP_HDR_FIRST ||
-			       innermost_ip_hdr == ROHC_IP_HDR_SECOND);
-			/* parse 11 bits of TS */
-			APPEND_TS_BITS(ROHC_EXT_2, bits,
-			               (GET_BIT_0_2(rohc_data) << 8) |
-			               GET_BIT_0_7(rohc_data + 1), 11);
-			/* parse 8 bits of the innermost IP-ID */
-			if(innermost_ip_hdr == ROHC_IP_HDR_FIRST)
-			{
-				APPEND_OUTER_IP_ID_BITS(ROHC_EXT_2, bits,
-				                        GET_BIT_0_7(rohc_data + 2), 8);
-			}
-			else
-			{
-				APPEND_INNER_IP_ID_BITS(ROHC_EXT_2, bits,
-				                        GET_BIT_0_7(rohc_data + 2), 8);
-			}
-			break;
-		}
-
-		case ROHC_PACKET_UOR_2_ID:
-		case ROHC_PACKET_UO_1_ID:
-		{
-			/* sanity check */
-			assert(innermost_ip_hdr == ROHC_IP_HDR_FIRST ||
-			       innermost_ip_hdr == ROHC_IP_HDR_SECOND);
-			/* parse 11 bits of the innermost IP-ID */
-			if(innermost_ip_hdr == ROHC_IP_HDR_FIRST)
-			{
-				APPEND_OUTER_IP_ID_BITS(ROHC_EXT_2, bits,
-				                        (GET_BIT_0_2(rohc_data) << 8) |
-				                        GET_BIT_0_7(rohc_data + 1), 11);
-			}
-			else
-			{
-				APPEND_INNER_IP_ID_BITS(ROHC_EXT_2, bits,
-				                        (GET_BIT_0_2(rohc_data) << 8) |
-				                        GET_BIT_0_7(rohc_data + 1), 11);
-			}
-			/* parse 8 bits of TS */
-			APPEND_TS_BITS(ROHC_EXT_2, bits, GET_BIT_0_7(rohc_data + 2), 8);
-			break;
-		}
-
 		default:
 		{
 			rohc_decomp_warn(context, "bad packet type (%d)", packet_type);
@@ -4051,6 +3951,5 @@ static void reset_extr_bits(const struct rohc_decomp_rfc3095_ctxt *const rfc3095
 	 * So init the is_ts_scaled variable to true by default.
 	 * \ref parse_ext3 will reset it to false if needed.
 	 */
-	bits->is_ts_scaled = true;
 }
 

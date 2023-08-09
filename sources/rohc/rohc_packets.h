@@ -63,13 +63,9 @@ typedef enum
 
 	/* UO-1 packets */
 	ROHC_PACKET_UO_1      =  3, /**< ROHC UO-1 packet (for all non-RTP profiles) */
-	ROHC_PACKET_UO_1_ID   =  4, /**< ROHC UO-1-ID packet (RTP profile only) */
-	ROHC_PACKET_UO_1_TS   =  5, /**< ROHC UO-1-TS packet (RTP profile only) */
 
 	/* UOR-2 packets */
 	ROHC_PACKET_UOR_2     =  7, /**< ROHC UOR-2 packet (for all non-RTP profiles) */
-	ROHC_PACKET_UOR_2_ID  =  9, /**< ROHC UO-2-ID packet (RTP profile only) */
-	ROHC_PACKET_UOR_2_TS  = 10, /**< ROHC UO-2-TS packet (RTP profile only) */
 
 	/* values 11 and 12 were used by CCE packets of the UDP-Lite profile */
 

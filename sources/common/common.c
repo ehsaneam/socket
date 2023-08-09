@@ -1,6 +1,6 @@
 #include "common.h"
 
-int sc_protocols[] = {IPPROTO_TCP, IPPROTO_UDP, IPPROTO_RTP};
+int sc_protocols[] = {IPPROTO_TCP, IPPROTO_UDP};
 int sc_ports[] = {12345, 54321, 11111, 33333};
 int sc_versions[] = {4, 6};
 FILE *pack_file;
@@ -56,8 +56,6 @@ const char* protocolToString(int protocol)
             return "UDP";
         case IPPROTO_TCP:
             return "TCP";
-        case IPPROTO_RTP:
-            return "RTP";
         default:
             return "Unknown";
     }
@@ -98,10 +96,6 @@ int toProtocol(char *str)
     else if( !strcmp(str, "TCP") )
     {
         return IPPROTO_TCP;
-    }
-    else if( !strcmp(str, "RTP") )
-    {
-        return IPPROTO_RTP;
     }
     else return -1;
 }

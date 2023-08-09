@@ -1554,8 +1554,6 @@ int code_packet(struct rohc_comp_ctxt *const context,
 			break;
 
 		case ROHC_PACKET_UOR_2:
-		case ROHC_PACKET_UOR_2_TS:
-		case ROHC_PACKET_UOR_2_ID:
 			code_packet_type = code_UO2_packet;
 			break;
 
@@ -3183,9 +3181,7 @@ static int code_EXT0_packet(const struct rohc_comp_ctxt *const context,
 	/* part 1: IP-ID or TS ? */
 	switch(packet_type)
 	{
-		case ROHC_PACKET_UOR_2_ID:
 		case ROHC_PACKET_UOR_2:
-		case ROHC_PACKET_UO_1_ID:
 		{
 			/* number of IP-ID bits and IP-ID offset to transmit  */
 			ip_header_pos_t innermost_ip_hdr;
@@ -4944,7 +4940,7 @@ static void rohc_comp_rfc3095_get_ext3_I_flags(const struct rohc_comp_ctxt *cons
                                                uint8_t *const I2)
 {
 	const struct rohc_comp_rfc3095_ctxt *rfc3095_ctxt = context->specific;
-
+	assert(packet_type>=0);
 	if(uncomp_pkt->ip_hdr_nr == 1)
 	{
 		const struct ip_packet *const inner_ip = &uncomp_pkt->outer_ip;
@@ -4956,15 +4952,7 @@ static void rohc_comp_rfc3095_get_ext3_I_flags(const struct rohc_comp_ctxt *cons
 		{
 			*innermost_ipv4_non_rnd = ROHC_IP_HDR_FIRST;
 
-			if((packet_type == ROHC_PACKET_UOR_2_ID ||
-			    packet_type == ROHC_PACKET_UO_1_ID) &&
-			   nr_ip_id_bits > 5)
-			{
-				*I = 1;
-			}
-			else if(packet_type != ROHC_PACKET_UOR_2_ID &&
-			        packet_type != ROHC_PACKET_UO_1_ID &&
-			        nr_ip_id_bits > 0)
+			if(nr_ip_id_bits > 0)
 			{
 				*I = 1;
 			}
@@ -5001,15 +4989,7 @@ static void rohc_comp_rfc3095_get_ext3_I_flags(const struct rohc_comp_ctxt *cons
 			/* inner IP header is IPv4 with non-random IP-ID */
 			*innermost_ipv4_non_rnd = ROHC_IP_HDR_SECOND;
 
-			if((packet_type == ROHC_PACKET_UOR_2_ID ||
-			    packet_type == ROHC_PACKET_UO_1_ID) &&
-			   nr_ip_id_bits2 > 5)
-			{
-				*I = 1;
-			}
-			else if(packet_type != ROHC_PACKET_UOR_2_ID &&
-			        packet_type != ROHC_PACKET_UO_1_ID &&
-			        nr_ip_id_bits2 > 0)
+			if(nr_ip_id_bits2 > 0)
 			{
 				*I = 1;
 			}
@@ -5052,15 +5032,7 @@ static void rohc_comp_rfc3095_get_ext3_I_flags(const struct rohc_comp_ctxt *cons
 			 * IP header is */
 			*innermost_ipv4_non_rnd = ROHC_IP_HDR_FIRST;
 
-			if((packet_type == ROHC_PACKET_UOR_2_ID ||
-			    packet_type == ROHC_PACKET_UO_1_ID) &&
-			   nr_ip_id_bits > 5)
-			{
-				*I = 1;
-			}
-			else if(packet_type != ROHC_PACKET_UOR_2_ID &&
-			        packet_type != ROHC_PACKET_UO_1_ID &&
-			        nr_ip_id_bits > 0)
+			if(nr_ip_id_bits > 0)
 			{
 				*I = 1;
 			}
