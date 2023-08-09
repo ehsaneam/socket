@@ -558,12 +558,12 @@ bool rohc_comp_rfc3095_check_profile(const struct rohc_comp *const comp,
 
 	/* check the IP version of the outer header */
 	version = ip_get_version(&packet->outer_ip);
-	if(version != IPV4 && version != IPV6)
+	if(version != IPV4)
 	{
 		rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
 		           "the outer IP packet (type = %d) is not supported by the "
-		           "profile: only IPv%d and IPv%d are supported",
-		           version, IPV4, IPV6);
+		           "profile: only IPv%d is supported",
+		           version, IPV4);
 		goto bad_profile;
 	}
 
@@ -601,20 +601,20 @@ bool rohc_comp_rfc3095_check_profile(const struct rohc_comp *const comp,
 	{
 		/* check the IP version of the inner header */
 		version = ip_get_version(&packet->inner_ip);
-		if(version != IPV4 && version != IPV6)
+		if(version != IPV4)
 		{
 			if(packet->inner_ip.size > 0)
 			{
 				const uint8_t pkt_vers = (packet->inner_ip.data[0] >> 4) & 0x0f;
 				rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
 				           "the inner IP packet contains a bad version (%u): only "
-				           "IPv%d and IPv%d are supported", pkt_vers, IPV4, IPV6);
+				           "IPv%d is supported", pkt_vers, IPV4);
 			}
 			else
 			{
 				rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
 				           "the inner IP packet contains a bad version: only "
-				           "IPv%d and IPv%d are supported", IPV4, IPV6);
+				           "IPv%d is supported", IPV4);
 			}
 			goto bad_profile;
 		}

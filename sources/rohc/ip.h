@@ -49,8 +49,6 @@ typedef enum
 {
 	/// IP version 4
 	IPV4 = 4,
-	/// IP version 6
-	IPV6 = 6,
 	/// not IP
 	IP_UNKNOWN = 0,
 	/// IP version 4 (malformed)
@@ -83,7 +81,6 @@ struct ip_packet
 	{
 		/// The IPv4 header
 		struct ipv4_hdr v4;
-		/// The IPv6 header
 	} header;
 
 	/// The whole IP data (header + payload) if not NULL
@@ -298,12 +295,6 @@ uint8_t * ip_get_next_header(const struct ip_packet *const ip,
 	__attribute__((warn_unused_result, nonnull(1, 2)));
 uint8_t * ip_get_next_layer(const struct ip_packet *const ip)
 	__attribute__((warn_unused_result, nonnull(1)));
-uint8_t * ip_get_next_ext_from_ip(const struct ip_packet *const ip,
-                                  uint8_t *const type)
-	__attribute__((warn_unused_result, nonnull(1, 2)));
-uint8_t * ip_get_next_ext_from_ext(const uint8_t *const ext,
-                                   uint8_t *const type)
-	__attribute__((warn_unused_result, nonnull(1, 2)));
 
 unsigned int ip_get_totlen(const struct ip_packet *const ip)
 	__attribute__((warn_unused_result, nonnull(1), pure));
@@ -357,24 +348,6 @@ void ipv4_set_id(struct ip_packet *const ip, const int value)
 	__attribute__((nonnull(1)));
 void ipv4_set_df(struct ip_packet *const ip, const int value)
 	__attribute__((nonnull(1)));
-
-/* IPv6 specific functions */
-
-const struct ipv6_hdr * ipv6_get_header(const struct ip_packet *const ip)
-	__attribute__((warn_unused_result, nonnull(1), pure));
-uint32_t ip_get_flow_label(const struct ip_packet *const ip)
-	__attribute__((warn_unused_result, nonnull(1), pure));
-const struct ipv6_addr * ipv6_get_saddr(const struct ip_packet *const ip)
-	__attribute__((warn_unused_result, nonnull(1), pure));
-const struct ipv6_addr * ipv6_get_daddr(const struct ip_packet *const ip)
-	__attribute__((warn_unused_result, nonnull(1), pure));
-void ip_set_flow_label(struct ip_packet *const ip, const uint32_t value)
-	__attribute__((nonnull(1)));
-unsigned short ip_get_extension_size(const uint8_t *const ext)
-	__attribute__((warn_unused_result, nonnull(1), pure));
-unsigned short ip_get_total_extension_size(const struct ip_packet *const ip)
-	__attribute__((warn_unused_result, nonnull(1)));
-
 
 /**
  * @brief Get the IP version of an IP packet

@@ -332,7 +332,7 @@ static void uncompressed_decide_state(struct rohc_comp_ctxt *const context,
 	/* non-IPv4/6 packets cannot be compressed with Normal packets because the
 	 * first byte could be mis-interpreted as ROHC packet types (see note at
 	 * the end of §5.10.2 in RFC 3095) */
-	if(ip_vers != IPV4 && ip_vers != IPV6)
+	if(ip_vers != IPV4)
 	{
 		rohc_comp_debug(context, "force IR packet to avoid conflict between "
 		                "first payload byte and ROHC packet types");

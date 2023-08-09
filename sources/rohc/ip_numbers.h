@@ -56,20 +56,12 @@ enum
 	ROHC_IPPROTO_TCP       = 6,
 	/** The IP protocol number for the User Datagram Protocol (UDP) */
 	ROHC_IPPROTO_UDP       = 17,
-	/** The IP protocol number for IPv6 */
-	ROHC_IPPROTO_IPV6      = 41,
-	/** The IP protocol number for IPv6 routing header */
-	ROHC_IPPROTO_ROUTING   = 43,
-	/** The IP protocol number for IPv6 fragment header */
-	ROHC_IPPROTO_FRAGMENT  = 44,
 	/** The IP protocol number for Generic Routing Encapsulation (GRE) */
 	ROHC_IPPROTO_GRE       = 47,
 	/** The IP protocol number for Authentication Header */
 	ROHC_IPPROTO_AH        = 51,
 	/** The IP protocol number for Minimal Encapsulation within IP (RFC 2004) */
 	ROHC_IPPROTO_MINE      = 55,
-	/** The IP protocol number for IPv6 destination option */
-	ROHC_IPPROTO_DSTOPTS   = 60,
 	/** The IP protocol number for Mobility Header */
 	ROHC_IPPROTO_MOBILITY  = 135,
 	/** The IP protocol number for the Host Identity Protocol (HIP) */
@@ -86,9 +78,6 @@ enum
 
 
 bool rohc_is_tunneling(const uint8_t protocol)
-	__attribute__((warn_unused_result, const));
-
-bool rohc_is_ipv6_opt(const uint8_t protocol)
 	__attribute__((warn_unused_result, const));
 
 const char * rohc_get_ip_proto_descr(const uint8_t protocol)

@@ -292,11 +292,6 @@ static int tcp_parse_dynamic_ipv6_option(const struct rohc_decomp_ctxt *const co
 
 	switch(opt_context->proto)
 	{
-		case ROHC_IPPROTO_ROUTING:  // IPv6 routing header
-		{
-			size = 0;
-			break;
-		}
 		case ROHC_IPPROTO_GRE:  /* TODO: GRE not yet supported */
 		{
 			rohc_decomp_warn(context, "GRE extension header not supported yet");

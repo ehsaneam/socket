@@ -43,14 +43,6 @@ static int tcp_parse_static_ip(const struct rohc_decomp_ctxt *const context,
                                uint8_t *const nh_proto)
 	__attribute__((warn_unused_result, nonnull(1, 2, 4, 5)));
 
-static int tcp_parse_static_ipv6_option(const struct rohc_decomp_ctxt *const context,
-                                        struct rohc_tcp_extr_ip_bits *const ip_bits,
-                                        ip_option_context_t *const opt_context,
-                                        const uint8_t protocol,
-                                        const uint8_t *const rohc_packet,
-                                        const size_t rohc_length)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 5)));
-
 static int tcp_parse_static_tcp(const struct rohc_decomp_ctxt *const context,
                                 const uint8_t *const rohc_packet,
                                 const size_t rohc_length,
@@ -158,7 +150,6 @@ static int tcp_parse_static_ip(const struct rohc_decomp_ctxt *const context,
 	const uint8_t *remain_data = rohc_packet;
 	size_t remain_len = rohc_length;
 	size_t read = 0;
-	int ret;
 
 	rohc_decomp_debug(context, "parse IP static part");
 
@@ -203,101 +194,6 @@ static int tcp_parse_static_ip(const struct rohc_decomp_ctxt *const context,
 		remain_len -= sizeof(ipv4_static_t);
 #endif
 	}
-	else
-	{
-		rohc_decomp_debug(context, "  IPv6 static part");
-		ip_bits->version = IPV6;
-
-		/* static 1 or static 2 variant? */
-		if(GET_BIT_4(remain_data) == 0)
-		{
-			const ipv6_static1_t *const ipv6_static1 =
-				(ipv6_static1_t *) remain_data;
-
-			if(remain_len < sizeof(ipv6_static1_t))
-			{
-				rohc_decomp_warn(context, "malformed ROHC packet: too short for "
-				                 "the IPv6 static part");
-				goto error;
-			}
-
-			ip_bits->flowid = 0;
-			ip_bits->flowid_nr = 20;
-			ip_bits->proto = ipv6_static1->next_header;
-			ip_bits->proto_nr = 8;
-			memcpy(ip_bits->saddr, &ipv6_static1->src_addr, sizeof(uint32_t) * 4);
-			ip_bits->saddr_nr = 128;
-			memcpy(ip_bits->daddr, &ipv6_static1->dst_addr, sizeof(uint32_t) * 4);
-			ip_bits->daddr_nr = 128;
-
-			read += sizeof(ipv6_static1_t);
-			remain_data += sizeof(ipv6_static1_t);
-			remain_len -= sizeof(ipv6_static1_t);
-		}
-		else
-		{
-			const ipv6_static2_t *const ipv6_static2 =
-				(ipv6_static2_t *) remain_data;
-
-			if(remain_len < sizeof(ipv6_static2_t))
-			{
-				rohc_decomp_warn(context, "malformed ROHC packet: too short for "
-				                 "the IPv6 static part");
-				goto error;
-			}
-
-			ip_bits->flowid = (ipv6_static2->flow_label1 << 16) |
-			                  rohc_ntoh16(ipv6_static2->flow_label2);
-			assert((ip_bits->flowid & 0xfffff) == ip_bits->flowid);
-			rohc_decomp_debug(context, "  IPv6 flow label = 0x%05x", ip_bits->flowid);
-			ip_bits->flowid_nr = 20;
-			ip_bits->proto = ipv6_static2->next_header;
-			ip_bits->proto_nr = 8;
-			memcpy(ip_bits->saddr, &ipv6_static2->src_addr, sizeof(uint32_t) * 4);
-			ip_bits->saddr_nr = 128;
-			memcpy(ip_bits->daddr, &ipv6_static2->dst_addr, sizeof(uint32_t) * 4);
-			ip_bits->daddr_nr = 128;
-
-			read += sizeof(ipv6_static2_t);
-			remain_data += sizeof(ipv6_static2_t);
-			remain_len -= sizeof(ipv6_static2_t);
-		}
-
-		*nh_proto = ip_bits->proto;
-		ip_bits->opts_nr = 0;
-		ip_bits->opts_len = 0;
-		while(rohc_is_ipv6_opt(*nh_proto))
-		{
-			ip_option_context_t *opt;
-
-			if(ip_bits->opts_nr >= ROHC_TCP_MAX_IP_EXT_HDRS)
-			{
-				rohc_decomp_warn(context, "too many IPv6 extension headers");
-				goto error;
-			}
-			opt = &(ip_bits->opts[ip_bits->opts_nr]);
-
-			ret = tcp_parse_static_ipv6_option(context, ip_bits, opt, *nh_proto,
-			                                   remain_data, remain_len);
-			if(ret < 0)
-			{
-				rohc_decomp_warn(context, "malformed ROHC packet: malformed "
-				                 "IPv6 static option part");
-				goto error;
-			}
-			rohc_decomp_debug(context, "IPv6 static option part is %d-byte length",
-			                  ret);
-			assert(remain_len >= ((size_t) ret));
-			read += ret;
-			remain_data += ret;
-			remain_len -= ret;
-
-			*nh_proto = opt->nh_proto;
-			ip_bits->opts_nr++;
-		}
-		rohc_decomp_debug(context, "IPv6 header is followed by %zu extension "
-		                  "headers", ip_bits->opts_nr);
-	}
 	rohc_decomp_dump_buf(context, "IP static part", rohc_packet, read);
 
 	return read;
@@ -305,76 +201,6 @@ static int tcp_parse_static_ip(const struct rohc_decomp_ctxt *const context,
 error:
 	return -1;
 }
-
-
-/**
- * @brief Decode the static IPv6 option header of the rohc packet.
- *
- * @param context           The decompression context
- * @param[out] ip_bits      The bits extracted from the IP part of the static chain
- * @param[out] opt_context  The specific IPv6 option decompression context
- * @param protocol          The protocol of the IPv6 option
- * @param rohc_packet       The remaining part of the ROHC packet
- * @param rohc_length       The remaining length (in bytes) of the ROHC packet
- * @return                  The length of static IP header in case of success,
- *                          -1 if an error occurs
- */
-static int tcp_parse_static_ipv6_option(const struct rohc_decomp_ctxt *const context,
-                                        struct rohc_tcp_extr_ip_bits *const ip_bits,
-                                        ip_option_context_t *const opt_context,
-                                        const uint8_t protocol,
-                                        const uint8_t *const rohc_packet,
-                                        const size_t rohc_length)
-{
-	const ip_opt_static_t *ip_opt_static;
-	size_t size;
-
-	rohc_decomp_debug(context, "parse static part of the IPv6 extension header "
-	                  "'%s' (%u)", rohc_get_ip_proto_descr(protocol), protocol);
-
-	/* at least 2 bytes required to read the next header and length */
-	if(rohc_length < sizeof(ip_opt_static_t))
-	{
-		rohc_decomp_warn(context, "malformed ROHC packet: too short for the "
-		                 "IP extension header static part");
-		goto error;
-	}
-	ip_opt_static = (ip_opt_static_t *) rohc_packet;
-	opt_context->proto = protocol;
-	opt_context->nh_proto = ip_opt_static->next_header;
-
-	switch(protocol)
-	{
-		case ROHC_IPPROTO_GRE:  /* TODO: GRE not yet supported */
-		{
-			rohc_decomp_warn(context, "GRE extension header not supported yet");
-			goto error;
-		}
-		case ROHC_IPPROTO_MINE:  /* TODO: MINE not yet supported */
-		{
-			rohc_decomp_warn(context, "GRE extension header not supported yet");
-			goto error;
-		}
-		case ROHC_IPPROTO_AH:  /* TODO: AH not yet supported */
-		{
-			rohc_decomp_warn(context, "GRE extension header not supported yet");
-			goto error;
-		}
-		default:
-		{
-			goto error;
-		}
-	}
-	ip_bits->opts_len += opt_context->len;
-
-	rohc_decomp_dump_buf(context, "IPv6 option static part", rohc_packet, size);
-
-	return size;
-
-error:
-	return -1;
-}
-
 
 /**
  * @brief Decode the TCP static part of the ROHC packet.

@@ -78,13 +78,6 @@ struct list_comp
 	int profile_id;
 };
 
-
-bool detect_ipv6_ext_changes(struct list_comp *const comp,
-                             const struct ip_packet *const ip,
-                             bool *const list_struct_changed,
-                             bool *const list_content_changed)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4)));
-
 int rohc_list_encode(struct list_comp *const comp,
                      uint8_t *const dest,
                      int counter)

@@ -42,9 +42,7 @@
 typedef enum
 {
 	HBH    = ROHC_IPPROTO_HOPOPTS,  /**< Hop by hop header */
-	RTHDR  = ROHC_IPPROTO_ROUTING,  /**< Routing header */
 	AH     = ROHC_IPPROTO_AH,       /**< AH header */
-	DEST   = ROHC_IPPROTO_DSTOPTS,  /**< Destination header */
 	/* CSRC lists not supported yet */
 } ext_header_version;
 

@@ -2734,20 +2734,6 @@ static void d_tcp_reset_extr_bits(const struct rohc_decomp_ctxt *const context,
 			bits->ip[i].version = tcp_context->ip_contexts[i].version;
 			bits->ip[i].proto = tcp_context->ip_contexts[i].ctxt.vx.next_header;
 			bits->ip[i].proto_nr = 8;
-			if(bits->ip[i].version == IPV6)
-			{
-				size_t j;
-
-				bits->ip[i].opts_nr = tcp_context->ip_contexts[i].opts_nr;
-				bits->ip[i].opts_len = tcp_context->ip_contexts[i].opts_len;
-				for(j = 0; j < bits->ip[i].opts_nr; j++)
-				{
-					bits->ip[i].opts[j].len = tcp_context->ip_contexts[i].opts[j].len;
-					bits->ip[i].opts[j].proto = tcp_context->ip_contexts[i].opts[j].proto;
-					bits->ip[i].opts[j].nh_proto =
-						tcp_context->ip_contexts[i].opts[j].nh_proto;
-				}
-			}
 		}
 		bits->ip_nr = tcp_context->ip_contexts_nr;
 	}
@@ -3078,27 +3064,7 @@ static bool d_tcp_decode_bits_ip_hdr(const struct rohc_decomp_ctxt *const contex
 		                  "from context", ip_decoded->proto, ip_decoded->proto);
 	}
 
-	/* flow ID */
-	if(ip_decoded->version == IPV6)
-	{
-		if(ip_bits->flowid_nr > 0)
-		{
-			assert(ip_bits->flowid_nr == 20);
-			ip_decoded->flowid = ip_bits->flowid;
-			rohc_decomp_debug(context, "  decoded flow label = 0x%05x",
-			                  ip_decoded->flowid);
-		}
-		else
-		{
-			ip_decoded->flowid = ip_context->ctxt.v6.flow_label;
-			rohc_decomp_debug(context, "  flow label = 0x%05x taken from context",
-			                  ip_decoded->flowid);
-		}
-	}
-	else /* IPv4 */
-	{
-		assert(ip_bits->flowid_nr == 0);
-	}
+	assert(ip_bits->flowid_nr == 0);
 
 	/* source address */
 	if(ip_bits->saddr_nr > 0)

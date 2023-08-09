@@ -2,7 +2,7 @@
 
 int sc_protocols[] = {IPPROTO_TCP, IPPROTO_UDP};
 int sc_ports[] = {12345, 54321, 11111, 33333};
-int sc_versions[] = {4, 6};
+int sc_versions[] = {4};
 FILE *pack_file;
 
 void dumpPacket(unsigned char *buffer, int len, const char *prompt)
@@ -67,8 +67,6 @@ const char* versionToString(int version)
     {
         case 4:
             return "IPv4";
-        case 6:
-            return "IPv6";
         default:
             return "Unknown";
     }
@@ -105,10 +103,6 @@ int toVersion(char *str)
     if( !strcmp(str, "IPv4") )
     {
         return 4;
-    }
-    else if( !strcmp(str, "IPv6" ) )
-    {
-        return 6;
     }
     else
     {

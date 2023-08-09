@@ -117,11 +117,6 @@ malformed:
 	{
 		ip->version = IPV4_MALFORMED;
 	}
-	else
-	{
-		assert(ip->version == IPV6);
-		ip->version = IPV6_MALFORMED;
-	}
 	ip->data = packet;
 	ip->size = size;
 	ip->nh.proto = 0;
@@ -214,125 +209,10 @@ uint8_t * ip_get_next_header(const struct ip_packet *const ip,
 uint8_t * ip_get_next_layer(const struct ip_packet *const ip)
 {
 	/* function does not handle non-IPv4/IPv6 packets */
-	assert(ip->version == IPV4 || ip->version == IPV6);
+	assert(ip->version == IPV4);
 
 	return ip->nl.data;
 }
-
-
-/**
- * @brief Get the next extension header of IPv6 packets from
- *        an IPv6 header
- *
- * The function does not handle \ref ip_packet whose \ref ip_packet::version
- * is \ref IP_UNKNOWN.
- *
- * @param ip   The IP packet to analyze
- * @param type OUT: The type of the next header
- *             If there is no next header the value must be ignored
- * @return     The next extension header,
- *             NULL if there is no extension
- */
-uint8_t * ip_get_next_ext_from_ip(const struct ip_packet *const ip,
-                                  uint8_t *const type)
-{
-	uint8_t *next_header;
-
-	/* function does not handle non-IPv4/IPv6 packets */
-	assert(ip->version != IP_UNKNOWN);
-
-	if(ip->version != IPV6)
-	{
-		return NULL;
-	}
-
-	/* get the next header data in the IP packet */
-	next_header = ip_get_next_header(ip, type);
-
-	if(rohc_is_ipv6_opt(*type))
-	{
-		/* known extension headers */
-		return next_header;
-	}
-	else
-	{
-		return NULL;
-	}
-}
-
-
-/**
- * @brief Get the next extension header of IPv6 packets from
- *        another extension
- *
- * @param ext  The extension to analyse
- * @param type OUT: The type of the next header
- *             If there is no next header the value must be ignored
- * @return     The next extension header,
- *             NULL if there is no more extension
- */
-uint8_t * ip_get_next_ext_from_ext(const uint8_t *const ext,
-                                   uint8_t *const type)
-{
-	uint8_t *next_header;
-
-	*type = ext[0];
-
-	if(rohc_is_ipv6_opt(*type))
-	{
-		/* known extension headers */
-		const uint8_t length = ext[1];
-		next_header = (uint8_t *)(ext + (length + 1) * 8);
-	}
-	else
-	{
-		next_header = NULL;
-	}
-
-	return next_header;
-}
-
-
-/**
- * @brief Get the size of an IPv6 extension
- *
- * @param ext The extension
- * @return    The size of the extension
- */
-unsigned short ip_get_extension_size(const uint8_t *const ext)
-{
-	const uint8_t ext_length = ext[1];
-
-	return (ext_length + 1) * 8;
-}
-
-
-/**
- * @brief Get the size of the extension list
- *
- * The function does not handle \ref ip_packet whose \ref ip_packet::version
- * is \ref IP_UNKNOWN.
- *
- * @param ip The packet to analyse
- * @return   The size of extension list
- */
-unsigned short ip_get_total_extension_size(const struct ip_packet *const ip)
-{
-	uint8_t *ext;
-	uint8_t next_hdr_type;
-	unsigned short total_ext_size = 0;
-
-	/* TODO: not very performant */
-	ext = ip_get_next_ext_from_ip(ip, &next_hdr_type);
-	while(ext != NULL)
-	{
-		total_ext_size += ip_get_extension_size(ext);
-		ext = ip_get_next_ext_from_ext(ext, &next_hdr_type);
-	}
-
-	return total_ext_size;
-}
-
 
 /**
  * @brief Whether the IP packet is an IP fragment or not
@@ -353,10 +233,6 @@ bool ip_is_fragment(const struct ip_packet *const ip)
 	if(ip->version == IPV4)
 	{
 		is_fragment = ipv4_is_fragment(&ip->header.v4);
-	}
-	else if(ip->version == IPV6)
-	{
-		is_fragment = false;
 	}
 	else
 	{
