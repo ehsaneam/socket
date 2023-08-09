@@ -54,7 +54,6 @@ typedef enum
 	ROHC_LSB_SHIFT_TCP_SEQ_SCALED =  7,      /**< real value for TCP seq/ack scaled */
 	ROHC_LSB_SHIFT_RTP_TS     =  100,    /**< need to compute real value for RTP TS */
 	ROHC_LSB_SHIFT_RTP_SN     =  101,    /**< need to compute real value for RTP SN */
-	ROHC_LSB_SHIFT_ESP_SN     =  102,    /**< need to compute real value for ESP SN */
 	ROHC_LSB_SHIFT_VAR        =  103,    /**< real value is variable */
 	ROHC_LSB_SHIFT_TCP_WINDOW = 16383,   /**< real value for TCP window */
 	ROHC_LSB_SHIFT_TCP_TS_3B  = 0x00040000, /**< real value for TCP TS */
@@ -158,7 +157,7 @@ static inline int32_t rohc_interval_compute_p(const size_t k,
 		/* special computation for RTP TS encoding */
 		computed_p = (k <= 2 ? 0 : (1 << (k - 2)) - 1);
 	}
-	else if(p == ROHC_LSB_SHIFT_RTP_SN || p == ROHC_LSB_SHIFT_ESP_SN)
+	else if(p == ROHC_LSB_SHIFT_RTP_SN)
 	{
 		/* special computation for RTP and ESP SN encoding */
 		computed_p = (k <= 4 ? 1 : (1 << (k - 5)) - 1);

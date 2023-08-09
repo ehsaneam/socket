@@ -1720,10 +1720,7 @@ static int code_IR_packet(struct rohc_comp_ctxt *const context,
 	int crc_position;
 	int ret;
 
-	if(context->profile->id != ROHC_PROFILE_ESP)
-	{
-		assert(rfc3095_ctxt->tmp.nr_sn_bits_more_than_4 <= 16);
-	}
+	assert(rfc3095_ctxt->tmp.nr_sn_bits_more_than_4 <= 16);
 	assert((ip_get_version(&uncomp_pkt->outer_ip) == IPV4 &&
 	        rfc3095_ctxt->tmp.nr_ip_id_bits <= 16) ||
 	       (ip_get_version(&uncomp_pkt->outer_ip) != IPV4 &&
@@ -6760,13 +6757,6 @@ static bool encode_uncomp_fields(struct rohc_comp_ctxt *const context,
 				wlsb_get_mink_16bits(&rfc3095_ctxt->sn_window, rfc3095_ctxt->sn, 5);
 			rfc3095_ctxt->tmp.nr_sn_bits_less_equal_than_4 =
 				wlsb_get_k_16bits(&rfc3095_ctxt->sn_window, rfc3095_ctxt->sn);
-		}
-		else if(context->profile->id == ROHC_PROFILE_ESP)
-		{
-			rfc3095_ctxt->tmp.nr_sn_bits_more_than_4 =
-				wlsb_get_mink_32bits(&rfc3095_ctxt->sn_window, rfc3095_ctxt->sn, 5);
-			rfc3095_ctxt->tmp.nr_sn_bits_less_equal_than_4 =
-				wlsb_get_k_32bits(&rfc3095_ctxt->sn_window, rfc3095_ctxt->sn);
 		}
 		else
 		{

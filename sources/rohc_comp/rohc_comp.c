@@ -3253,23 +3253,6 @@ static bool rohc_comp_feedback_parse_opt_sn(const struct rohc_comp_ctxt *const c
 		(*sn_bits) = ((*sn_bits) << 2) + ((remain_data[1] >> 6) & 0x03);
 		(*sn_bits_nr) += 2;
 	}
-	else if(context->profile->id == ROHC_PROFILE_ESP)
-	{
-		if(((*sn_bits) & 0xff000000) != 0)
-		{
-			rohc_comp_warn(context, "malformed FEEDBACK-2: more than 32 bits "
-			               "used for SN of the ESP profile");
-#ifndef ROHC_RFC_STRICT_DECOMPRESSOR
-			rohc_comp_warn(context, "malformed FEEDBACK-2: truncate the MSB "
-			               "of the unexpected SN value");
-			(*sn_bits) &= 0x00ffffff;
-#else
-			goto error;
-#endif
-		}
-		(*sn_bits) = ((*sn_bits) << 8) + (remain_data[1] & 0xff);
-		(*sn_bits_nr) += 8;
-	}
 	else /* non-TCP and non-ESP profiles */
 	{
 		if(((*sn_bits) & 0xffffff00) != 0)

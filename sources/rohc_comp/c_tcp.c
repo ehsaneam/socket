@@ -985,7 +985,6 @@ static bool rohc_comp_tcp_are_ipv6_exts_acceptable(const struct rohc_comp *const
 				}
 				break;
 			}
-			// case ROHC_IPPROTO_ESP : ???
 			case ROHC_IPPROTO_GRE:  /* TODO: GRE not yet supported */
 			case ROHC_IPPROTO_MINE: /* TODO: MINE not yet supported */
 			case ROHC_IPPROTO_AH:   /* TODO: AH not yet supported */

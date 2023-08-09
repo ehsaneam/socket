@@ -5663,10 +5663,7 @@ bool rfc3095_decomp_decode_bits(const struct rohc_decomp_ctxt *const context,
 		else if(bits->sn_nr == 0)
 		{
 			decoded->sn = context->profile->get_sn(context) + 1; /* deduction */
-			if(context->profile->id != ROHC_PROFILE_ESP)
-			{
-				decoded->sn &= 0xffff;
-			}
+			decoded->sn &= 0xffff;
 		}
 		else
 		{
@@ -6186,29 +6183,14 @@ void rfc3095_decomp_update_ctxt(struct rohc_decomp_ctxt *const context,
 		sn_context = context->profile->get_sn(context);
 
 		/* compute the next SN value we expect in packet */
-		if(context->profile->id == ROHC_PROFILE_ESP)
+		/* other profiles handle 16-bit SN values */
+		if(sn_context == 0xffff)
 		{
-			/* ESP profile handles 32-bit SN values */
-			if(sn_context == 0xffffffff)
-			{
-				expected_next_sn = 0;
-			}
-			else
-			{
-				expected_next_sn = sn_context + 1;
-			}
+			expected_next_sn = 0;
 		}
 		else
 		{
-			/* other profiles handle 16-bit SN values */
-			if(sn_context == 0xffff)
-			{
-				expected_next_sn = 0;
-			}
-			else
-			{
-				expected_next_sn = sn_context + 1;
-			}
+			expected_next_sn = sn_context + 1;
 		}
 
 		/* do we decoded the expected SN? */

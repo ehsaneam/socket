@@ -153,8 +153,6 @@ const char * rohc_get_profile_descr(const rohc_profile_t profile)
 			return "IP/UDP/RTP";
 		case ROHC_PROFILE_UDP:
 			return "IP/UDP";
-		case ROHC_PROFILE_ESP:
-			return "IP/ESP";
 		case ROHC_PROFILE_IP:
 			return "IP-only";
 		case ROHC_PROFILE_RTP_LLA:

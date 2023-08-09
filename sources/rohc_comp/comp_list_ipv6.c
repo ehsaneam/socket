@@ -144,11 +144,6 @@ static int get_index_ipv6_table(const uint8_t next_header_type,
 		case ROHC_IPPROTO_FRAGMENT:
 			index_table = 4;
 			break;
-#if 0 /* TODO: add support for null ESP header */
-		case ROHC_IPPROTO_ESP:
-			index_table = 5;
-			break;
-#endif
 		case ROHC_IPPROTO_MOBILITY:
 			index_table = 6;
 			break;

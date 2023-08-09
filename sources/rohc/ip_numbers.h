@@ -64,8 +64,6 @@ enum
 	ROHC_IPPROTO_FRAGMENT  = 44,
 	/** The IP protocol number for Generic Routing Encapsulation (GRE) */
 	ROHC_IPPROTO_GRE       = 47,
-	/** The IP protocol number for the Encapsulating Security Payload (ESP)  */
-	ROHC_IPPROTO_ESP       = 50,
 	/** The IP protocol number for Authentication Header */
 	ROHC_IPPROTO_AH        = 51,
 	/** The IP protocol number for Minimal Encapsulation within IP (RFC 2004) */

@@ -61,9 +61,6 @@ bool rohc_is_ipv6_opt(const uint8_t protocol)
 #if 0 /* TODO: add support for GRE header */
 	        protocol == ROHC_IPPROTO_GRE ||
 #endif
-#if 0 /* TODO: add support for null ESP header */
-	        protocol == ROHC_IPPROTO_ESP ||
-#endif
 #if 0 /* TODO: add support for AH header */
 	        protocol == ROHC_IPPROTO_AH ||
 #endif
@@ -105,8 +102,6 @@ const char * rohc_get_ip_proto_descr(const uint8_t protocol)
 			return "Fragment option";
 		case ROHC_IPPROTO_GRE:
 			return "GRE";
-		case ROHC_IPPROTO_ESP:
-			return "ESP";
 		case ROHC_IPPROTO_AH:
 			return "AH";
 		case ROHC_IPPROTO_MINE:
