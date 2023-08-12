@@ -479,60 +479,47 @@ static bool c_tcp_create_from_pkt(struct rohc_comp_ctxt *const context,
 
 	/* create contexts for IP headers and their extensions */
 	tcp_context->ip_contexts_nr = 0;
-	do
+	const struct ip_hdr *const ip = (struct ip_hdr *) remain_data;
+	ip_context_t *const ip_context =
+		&(tcp_context->ip_contexts[tcp_context->ip_contexts_nr]);
+
+	/* retrieve IP version */
+	assert(remain_len >= sizeof(struct ip_hdr));
+	rohc_comp_debug(context, "found IPv%d", ip->version);
+	ip_context->version = ip->version;
+	ip_context->ctxt.vx.version = ip->version;
+
+	switch(ip->version)
 	{
-		const struct ip_hdr *const ip = (struct ip_hdr *) remain_data;
-		ip_context_t *const ip_context =
-			&(tcp_context->ip_contexts[tcp_context->ip_contexts_nr]);
-
-		/* retrieve IP version */
-		assert(remain_len >= sizeof(struct ip_hdr));
-		rohc_comp_debug(context, "found IPv%d", ip->version);
-		ip_context->version = ip->version;
-		ip_context->ctxt.vx.version = ip->version;
-
-		switch(ip->version)
+		case IPV4:
 		{
-			case IPV4:
-			{
-				const struct ipv4_hdr *const ipv4 = (struct ipv4_hdr *) remain_data;
+			const struct ipv4_hdr *const ipv4 = (struct ipv4_hdr *) remain_data;
 
-				assert(remain_len >= sizeof(struct ipv4_hdr));
-				proto = ipv4->protocol;
+			assert(remain_len >= sizeof(struct ipv4_hdr));
+			proto = ipv4->protocol;
 
-				ip_context->ctxt.v4.last_ip_id = rohc_ntoh16(ipv4->id);
-				rohc_comp_debug(context, "IP-ID 0x%04x", ip_context->ctxt.v4.last_ip_id);
-				ip_context->ctxt.v4.last_ip_id_behavior = IP_ID_BEHAVIOR_SEQ;
-				ip_context->ctxt.v4.ip_id_behavior = IP_ID_BEHAVIOR_SEQ;
-				ip_context->ctxt.v4.protocol = proto;
-				ip_context->ctxt.v4.dscp = ipv4->dscp;
-				ip_context->ctxt.v4.df = ipv4->df;
-				ip_context->ctxt.v4.ttl_hopl = ipv4->ttl;
-				ip_context->ctxt.v4.src_addr = ipv4->saddr;
-				ip_context->ctxt.v4.dst_addr = ipv4->daddr;
+			ip_context->ctxt.v4.last_ip_id = rohc_ntoh16(ipv4->id);
+			rohc_comp_debug(context, "IP-ID 0x%04x", ip_context->ctxt.v4.last_ip_id);
+			ip_context->ctxt.v4.last_ip_id_behavior = IP_ID_BEHAVIOR_SEQ;
+			ip_context->ctxt.v4.ip_id_behavior = IP_ID_BEHAVIOR_SEQ;
+			ip_context->ctxt.v4.protocol = proto;
+			ip_context->ctxt.v4.dscp = ipv4->dscp;
+			ip_context->ctxt.v4.df = ipv4->df;
+			ip_context->ctxt.v4.ttl_hopl = ipv4->ttl;
+			ip_context->ctxt.v4.src_addr = ipv4->saddr;
+			ip_context->ctxt.v4.dst_addr = ipv4->daddr;
 
-				remain_data += sizeof(struct ipv4_hdr);
-				remain_len -= sizeof(struct ipv4_hdr);
-				break;
-			}
-			default:
-			{
-				goto free_context;
-			}
+			remain_data += sizeof(struct ipv4_hdr);
+			remain_len -= sizeof(struct ipv4_hdr);
+			break;
 		}
-
-		tcp_context->ip_contexts_nr++;
+		default:
+		{
+			goto free_context;
+		}
 	}
-	while(rohc_is_tunneling(proto) && tcp_context->ip_contexts_nr < ROHC_TCP_MAX_IP_HDRS);
 
-	/* profile cannot handle the packet if it bypasses internal limit of IP headers */
-	if(rohc_is_tunneling(proto))
-	{
-		rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		           "too many IP headers for TCP profile (%u headers max)",
-		           ROHC_TCP_MAX_IP_HDRS);
-		goto free_context;
-	}
+	tcp_context->ip_contexts_nr++;
 
 	/* create context for TCP header */
 	tcp_context->tcp_seq_num_change_count = 0;
@@ -650,93 +637,80 @@ static bool c_tcp_check_profile(const struct rohc_comp *const comp,
 	/* check that the the versions of IP headers are 4 or 6 and that IP headers
 	 * are not IP fragments */
 	ip_hdrs_nr = 0;
-	do
-	{
-		const struct ip_hdr *const ip = (struct ip_hdr *) remain_data;
+	const struct ip_hdr *const ip = (struct ip_hdr *) remain_data;
 
-		/* check minimal length for IP version */
-		if(remain_len < sizeof(struct ip_hdr))
-		{
-			rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-			           "failed to determine the version of IP header #%zu",
-			           ip_hdrs_nr + 1);
-			goto bad_profile;
-		}
-
-		if(ip->version == IPV4)
-		{
-			const struct ipv4_hdr *const ipv4 = (struct ipv4_hdr *) remain_data;
-			const size_t ipv4_min_words_nr = sizeof(struct ipv4_hdr) / sizeof(uint32_t);
-
-			rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL, "found IPv4");
-			if(remain_len < sizeof(struct ipv4_hdr))
-			{
-				rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-				           "uncompressed packet too short for IP header #%zu",
-				           ip_hdrs_nr + 1);
-				goto bad_profile;
-			}
-
-			/* IPv4 options are not supported by the TCP profile */
-			if(ipv4->ihl != ipv4_min_words_nr)
-			{
-				rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-				           "IP packet #%zu is not supported by the profile: "
-				           "IP options are not accepted", ip_hdrs_nr + 1);
-				goto bad_profile;
-			}
-
-			/* IPv4 total length shall be correct */
-			if(rohc_ntoh16(ipv4->tot_len) != remain_len)
-			{
-				rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-				           "IP packet #%zu is not supported by the profile: total "
-				           "length is %u while it shall be %zu", ip_hdrs_nr + 1,
-				           rohc_ntoh16(ipv4->tot_len), remain_len);
-				goto bad_profile;
-			}
-
-			/* check if the IPv4 header is a fragment */
-			if(ipv4_is_fragment(ipv4))
-			{
-				rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-				           "IP packet #%zu is fragmented", ip_hdrs_nr + 1);
-				goto bad_profile;
-			}
-
-			/* check if the checksum of the IPv4 header is correct */
-			if((comp->features & ROHC_COMP_FEATURE_NO_IP_CHECKSUMS) == 0 &&
-			   ip_fast_csum(remain_data, ipv4_min_words_nr) != 0)
-			{
-				rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-				           "IP packet #%zu is not correct (bad checksum)",
-				           ip_hdrs_nr + 1);
-				goto bad_profile;
-			}
-
-			next_proto = ipv4->protocol;
-			remain_data += sizeof(struct ipv4_hdr);
-			remain_len -= sizeof(struct ipv4_hdr);
-		}
-		else
-		{
-			rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-			           "unsupported version %u for header #%zu",
-			           ip->version, ip_hdrs_nr + 1);
-			goto bad_profile;
-		}
-		ip_hdrs_nr++;
-	}
-	while(rohc_is_tunneling(next_proto) && ip_hdrs_nr < ROHC_TCP_MAX_IP_HDRS);
-
-	/* profile cannot handle the packet if it bypasses internal limit of IP headers */
-	if(rohc_is_tunneling(next_proto))
+	/* check minimal length for IP version */
+	if(remain_len < sizeof(struct ip_hdr))
 	{
 		rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		           "too many IP headers for TCP profile (%u headers max)",
-		           ROHC_TCP_MAX_IP_HDRS);
+					"failed to determine the version of IP header #%zu",
+					ip_hdrs_nr + 1);
 		goto bad_profile;
 	}
+
+	if(ip->version == IPV4)
+	{
+		const struct ipv4_hdr *const ipv4 = (struct ipv4_hdr *) remain_data;
+		const size_t ipv4_min_words_nr = sizeof(struct ipv4_hdr) / sizeof(uint32_t);
+
+		rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL, "found IPv4");
+		if(remain_len < sizeof(struct ipv4_hdr))
+		{
+			rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
+						"uncompressed packet too short for IP header #%zu",
+						ip_hdrs_nr + 1);
+			goto bad_profile;
+		}
+
+		/* IPv4 options are not supported by the TCP profile */
+		if(ipv4->ihl != ipv4_min_words_nr)
+		{
+			rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
+						"IP packet #%zu is not supported by the profile: "
+						"IP options are not accepted", ip_hdrs_nr + 1);
+			goto bad_profile;
+		}
+
+		/* IPv4 total length shall be correct */
+		if(rohc_ntoh16(ipv4->tot_len) != remain_len)
+		{
+			rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
+						"IP packet #%zu is not supported by the profile: total "
+						"length is %u while it shall be %zu", ip_hdrs_nr + 1,
+						rohc_ntoh16(ipv4->tot_len), remain_len);
+			goto bad_profile;
+		}
+
+		/* check if the IPv4 header is a fragment */
+		if(ipv4_is_fragment(ipv4))
+		{
+			rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
+						"IP packet #%zu is fragmented", ip_hdrs_nr + 1);
+			goto bad_profile;
+		}
+
+		/* check if the checksum of the IPv4 header is correct */
+		if((comp->features & ROHC_COMP_FEATURE_NO_IP_CHECKSUMS) == 0 &&
+			ip_fast_csum(remain_data, ipv4_min_words_nr) != 0)
+		{
+			rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
+						"IP packet #%zu is not correct (bad checksum)",
+						ip_hdrs_nr + 1);
+			goto bad_profile;
+		}
+
+		next_proto = ipv4->protocol;
+		remain_data += sizeof(struct ipv4_hdr);
+		remain_len -= sizeof(struct ipv4_hdr);
+	}
+	else
+	{
+		rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
+					"unsupported version %u for header #%zu",
+					ip->version, ip_hdrs_nr + 1);
+		goto bad_profile;
+	}
+	ip_hdrs_nr++;
 
 	/* check that the transport protocol is TCP */
 	if(next_proto != ROHC_IPPROTO_TCP)
@@ -819,8 +793,7 @@ static bool c_tcp_check_context(const struct rohc_comp_ctxt *const context,
 	struct sc_tcp_context *const tcp_context = context->specific;
 	const uint8_t *remain_data = packet->outer_ip.data;
 	size_t remain_len = packet->outer_ip.size;
-	size_t ip_hdr_pos;
-	uint8_t next_proto = ROHC_IPPROTO_IPIP;
+	uint8_t next_proto;
 	const struct tcphdr *tcp;
 
 	/* Context Replication is possible only if the chain of IP headers is
@@ -830,76 +803,58 @@ static bool c_tcp_check_context(const struct rohc_comp_ctxt *const context,
 	 *  - IP addresses */
 	(*cr_score) = 0;
 
-	/* parse the IP headers (lengths already checked while checking profile) */
-	for(ip_hdr_pos = 0;
-	    ip_hdr_pos < tcp_context->ip_contexts_nr && rohc_is_tunneling(next_proto);
-	    ip_hdr_pos++)
+	const struct ip_hdr *const ip = (struct ip_hdr *) remain_data;
+	const ip_context_t *const ip_context = &(tcp_context->ip_contexts[0]);
+
+	/* retrieve IP version */
+	assert(remain_len >= sizeof(struct ip_hdr));
+	rohc_comp_debug(context, "found IPv%d", ip->version);
+	if(ip->version != ip_context->version)
 	{
-		const struct ip_hdr *const ip = (struct ip_hdr *) remain_data;
-		const ip_context_t *const ip_context = &(tcp_context->ip_contexts[ip_hdr_pos]);
-
-		/* retrieve IP version */
-		assert(remain_len >= sizeof(struct ip_hdr));
-		rohc_comp_debug(context, "found IPv%d", ip->version);
-		if(ip->version != ip_context->version)
-		{
-			rohc_comp_debug(context, "  not same IP version");
-			goto bad_context;
-		}
-
-		if(ip->version == IPV4)
-		{
-			const struct ipv4_hdr *const ipv4 = (struct ipv4_hdr *) remain_data;
-
-			assert(remain_len >= sizeof(struct ipv4_hdr));
-
-			/* check source address */
-			if(ipv4->saddr != ip_context->ctxt.v4.src_addr)
-			{
-				rohc_comp_debug(context, "  not same IPv4 source addresses");
-				goto bad_context;
-			}
-			rohc_comp_debug(context, "  same IPv4 source addresses");
-
-			/* check destination address */
-			if(ipv4->daddr != ip_context->ctxt.v4.dst_addr)
-			{
-				rohc_comp_debug(context, "  not same IPv4 destination addresses");
-				goto bad_context;
-			}
-			rohc_comp_debug(context, "  same IPv4 destination addresses");
-
-			/* check transport protocol */
-			next_proto = ipv4->protocol;
-			if(next_proto != ip_context->ctxt.v4.protocol)
-			{
-				rohc_comp_debug(context, "  IPv4 not same protocol");
-				goto bad_context;
-			}
-			rohc_comp_debug(context, "  IPv4 same protocol %d", next_proto);
-
-			/* skip IPv4 header */
-			remain_data += sizeof(struct ipv4_hdr);
-			remain_len -= sizeof(struct ipv4_hdr);
-		}
-		else
-		{
-			rohc_comp_warn(context, "unsupported version %u for header #%zu",
-			               ip->version, ip_hdr_pos + 1);
-			assert(0);
-			goto bad_context;
-		}
-	}
-
-	if(ip_hdr_pos < tcp_context->ip_contexts_nr)
-	{
-		rohc_comp_debug(context, "  less IP headers than context");
+		rohc_comp_debug(context, "  not same IP version");
 		goto bad_context;
 	}
 
-	if(rohc_is_tunneling(next_proto))
+	if(ip->version == IPV4)
 	{
-		rohc_comp_debug(context, "  more IP headers than context");
+		const struct ipv4_hdr *const ipv4 = (struct ipv4_hdr *) remain_data;
+
+		assert(remain_len >= sizeof(struct ipv4_hdr));
+
+		/* check source address */
+		if(ipv4->saddr != ip_context->ctxt.v4.src_addr)
+		{
+			rohc_comp_debug(context, "  not same IPv4 source addresses");
+			goto bad_context;
+		}
+		rohc_comp_debug(context, "  same IPv4 source addresses");
+
+		/* check destination address */
+		if(ipv4->daddr != ip_context->ctxt.v4.dst_addr)
+		{
+			rohc_comp_debug(context, "  not same IPv4 destination addresses");
+			goto bad_context;
+		}
+		rohc_comp_debug(context, "  same IPv4 destination addresses");
+
+		/* check transport protocol */
+		next_proto = ipv4->protocol;
+		if(next_proto != ip_context->ctxt.v4.protocol)
+		{
+			rohc_comp_debug(context, "  IPv4 not same protocol");
+			goto bad_context;
+		}
+		rohc_comp_debug(context, "  IPv4 same protocol %d", next_proto);
+
+		/* skip IPv4 header */
+		remain_data += sizeof(struct ipv4_hdr);
+		remain_len -= sizeof(struct ipv4_hdr);
+	}
+	else
+	{
+		rohc_comp_warn(context, "unsupported version %u for header 1",
+						ip->version);
+		assert(0);
 		goto bad_context;
 	}
 

@@ -77,34 +77,24 @@ bool tcp_parse_static_chain(const struct rohc_decomp_ctxt *const context,
 
 	/* parse static IP part (IPv4/IPv6 headers and extension headers) */
 	ip_hdrs_nr = 0;
-	do
+	struct rohc_tcp_extr_ip_bits *const ip_bits = &(bits->ip[ip_hdrs_nr]);
+
+	ret = tcp_parse_static_ip(context, remain_data, remain_len, ip_bits,
+								&protocol);
+	if(ret < 0)
 	{
-		struct rohc_tcp_extr_ip_bits *const ip_bits = &(bits->ip[ip_hdrs_nr]);
-
-		ret = tcp_parse_static_ip(context, remain_data, remain_len, ip_bits,
-		                          &protocol);
-		if(ret < 0)
-		{
-			rohc_decomp_warn(context, "malformed ROHC packet: malformed IP "
-			                 "static part");
-			goto error;
-		}
-		rohc_decomp_debug(context, "IPv%u static part is %d-byte length",
-		                  ip_bits->version, ret);
-		assert(remain_len >= ((size_t) ret));
-		remain_data += ret;
-		remain_len -= ret;
-		(*parsed_len) += ret;
-
-		ip_hdrs_nr++;
-	}
-	while(rohc_is_tunneling(protocol) && ip_hdrs_nr < ROHC_TCP_MAX_IP_HDRS);
-
-	if(rohc_is_tunneling(protocol) && ip_hdrs_nr >= ROHC_TCP_MAX_IP_HDRS)
-	{
-		rohc_decomp_warn(context, "too many IP headers to decompress");
+		rohc_decomp_warn(context, "malformed ROHC packet: malformed IP "
+							"static part");
 		goto error;
 	}
+	rohc_decomp_debug(context, "IPv%u static part is %d-byte length",
+						ip_bits->version, ret);
+	assert(remain_len >= ((size_t) ret));
+	remain_data += ret;
+	remain_len -= ret;
+	(*parsed_len) += ret;
+	ip_hdrs_nr++;
+
 	bits->ip_nr = ip_hdrs_nr;
 
 	/* parse TCP static part */

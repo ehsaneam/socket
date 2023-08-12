@@ -607,32 +607,15 @@ static bool parse_ir(const struct rohc_decomp_ctxt *const context,
 
 	/* check for the presence of a second IP header */
 	assert(bits->outer_ip.proto_nr == 8);
-	if(rohc_is_tunneling(bits->outer_ip.proto))
+	/* check for 2 to 1 IP headers switch during context re-use */
+	if(context->num_recv_packets >= 1 && rfc3095_ctxt->multiple_ip)
 	{
-		rohc_decomp_debug(context, "second IP header detected");
-
-		/* check for 1 to 2 IP headers switch during context re-use */
-		if(context->num_recv_packets >= 1 && !rfc3095_ctxt->multiple_ip)
-		{
-			rohc_decomp_debug(context, "number of IP headers mismatch (packet "
-			                  "= 2, context = 1) -> context is being reused");
-			bits->is_context_reused = true;
-		}
-
-		bits->multiple_ip = true;
+		rohc_decomp_debug(context, "number of IP headers mismatch (packet "
+							"= 1, context = 2) -> context is being reused");
+		bits->is_context_reused = true;
 	}
-	else
-	{
-		/* check for 2 to 1 IP headers switch during context re-use */
-		if(context->num_recv_packets >= 1 && rfc3095_ctxt->multiple_ip)
-		{
-			rohc_decomp_debug(context, "number of IP headers mismatch (packet "
-			                  "= 1, context = 2) -> context is being reused");
-			bits->is_context_reused = true;
-		}
 
-		bits->multiple_ip = false;
-	}
+	bits->multiple_ip = false;
 
 	/* decode the static part of the inner IP header
 	 * if multiple IP headers */

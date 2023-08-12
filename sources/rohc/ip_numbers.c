@@ -24,19 +24,6 @@
 
 #include "ip_numbers.h"
 
-
-/**
- * @brief Whether the given protocol is IP tunneling
- *
- * @param protocol  The protocol number to check for
- * @return          true if the protocol is IP/IP or IPv6,
- *                  false otherwise
- */
-bool rohc_is_tunneling(const uint8_t protocol)
-{
-	return (protocol == ROHC_IPPROTO_IPIP);
-}
-
 /**
  * @brief Give a description for the given IP protocol
  *

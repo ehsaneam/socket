@@ -75,33 +75,6 @@ void net_pkt_parse(struct net_pkt *const packet,
 
 	/* get the transport protocol */
 	packet->transport = &packet->outer_ip.nl;
-
-	/* is there any inner IP header? */
-	if(rohc_is_tunneling(packet->transport->proto))
-	{
-		/* create the second IP header */
-		ip_get_inner_packet(&packet->outer_ip, &packet->inner_ip);
-		packet->ip_hdr_nr++;
-		rohc_debug(packet, trace_entity, ROHC_PROFILE_GENERAL,
-		           "inner IP header: %u bytes", ip_get_totlen(&packet->inner_ip));
-		rohc_debug(packet, trace_entity, ROHC_PROFILE_GENERAL,
-		           "inner IP header: version %d", ip_get_version(&packet->inner_ip));
-		if(packet->inner_ip.nh.data != NULL)
-		{
-			rohc_debug(packet, trace_entity, ROHC_PROFILE_GENERAL,
-			           "inner IP header: next header is of type %d",
-			           packet->inner_ip.nh.proto);
-			if(packet->inner_ip.nl.data != NULL)
-			{
-				rohc_debug(packet, trace_entity, ROHC_PROFILE_GENERAL,
-				           "inner IP header: next layer is of type %d",
-				           packet->inner_ip.nl.proto);
-			}
-		}
-
-		/* get the transport protocol */
-		packet->transport = &packet->inner_ip.nl;
-	}
 }
 
 
