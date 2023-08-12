@@ -33,7 +33,6 @@
 #include "rohc_comp.h"
 #include "comp_wlsb.h"
 #include "net_pkt.h"
-#include "feedback.h"
 
 #include <stdbool.h>
 
@@ -299,18 +298,6 @@ struct rohc_comp_profile
 	 */
 	bool (*reinit_context)(struct rohc_comp_ctxt *const context)
 		__attribute__((nonnull(1), warn_unused_result));
-
-	/**
-	 * @brief The handler used to warn the profile-specific part of the
-	 *        context about the arrival of feedback data
-	 */
-	bool (*feedback)(struct rohc_comp_ctxt *const context,
-	                 const enum rohc_feedback_type feedback_type,
-	                 const uint8_t *const packet,
-	                 const size_t packet_len,
-	                 const uint8_t *const feedback_data,
-	                 const size_t feedback_data_len)
-		__attribute__((warn_unused_result, nonnull(1, 3, 5)));
 };
 
 
@@ -424,18 +411,6 @@ void rohc_comp_periodic_down_transition(struct rohc_comp_ctxt *const context,
 
 bool rohc_comp_reinit_context(struct rohc_comp_ctxt *const context)
 	__attribute__((warn_unused_result, nonnull(1)));
-
-bool rohc_comp_feedback_parse_opts(const struct rohc_comp_ctxt *const context,
-                                   const uint8_t *const packet,
-                                   const size_t packet_len,
-                                   const uint8_t *const feedback_data,
-                                   const size_t feedback_data_len,
-                                   size_t opts_present[ROHC_FEEDBACK_OPT_MAX],
-                                   uint32_t *const sn_bits,
-                                   size_t *const sn_bits_nr,
-                                   uint8_t crc_in_packet,
-                                   size_t crc_pos_from_end)
-	__attribute__((warn_unused_result, nonnull(1, 2, 4, 6, 7, 8)));
 
 #endif
 

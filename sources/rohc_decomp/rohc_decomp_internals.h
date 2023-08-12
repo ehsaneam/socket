@@ -30,7 +30,6 @@
 #include "rohc_internal.h"
 #include "rohc_decomp.h"
 #include "rohc_traces_internal.h"
-#include "feedback_create.h"
 #include "crc.h"
 
 /*
@@ -158,21 +157,6 @@ struct rohc_decomp
 	/** The last decompression context used by the decompressor */
 	struct rohc_decomp_ctxt *last_context;
 
-
-	/* feedback-related variables */
-
-	/** The maximum number of packets sent during one RTT */
-	size_t prtt;
-	/** The minimum number of SN bits to transmit in feedbacks */
-	size_t sn_feedback_min_bits;
-	/** The configuration for feedback rate-limiting */
-	struct rohc_ack_rate_limits ack_rate_limits;
-	/** Whether the last decompressed packets failed or not */
-	uint32_t last_pkts_errors;
-	/** The informations for feedback rate-limiting */
-	struct rohc_ack_stats last_pkt_feedbacks[ROHC_FEEDBACK_RESERVED];
-
-
 	/* segment-related variables */
 
 /** The maximal value for MRRU */
@@ -296,8 +280,6 @@ struct rohc_decomp_ctxt
 
 	/** Whether the last decompressed packets failed or not */
 	uint32_t last_pkts_errors;
-	/** The informations for feedback rate-limiting */
-	struct rohc_ack_stats last_pkt_feedbacks[ROHC_FEEDBACK_RESERVED];
 
 	/** The context for corrections upon CRC failure */
 	struct rohc_decomp_crc_corr_ctxt crc_corr;

@@ -382,20 +382,6 @@ bool ROHC_EXPORT rohc_decomp_get_prtt(const struct rohc_decomp *const decomp,
                                       size_t *const prtt)
 	__attribute__((warn_unused_result));
 
-/* feedback rate-limiting */
-
-bool ROHC_EXPORT rohc_decomp_set_rate_limits(struct rohc_decomp *const decomp,
-                                             const size_t k, const size_t n,
-                                             const size_t k_1, const size_t n_1,
-                                             const size_t k_2, const size_t n_2)
-	__attribute__((warn_unused_result));
-
-bool ROHC_EXPORT rohc_decomp_get_rate_limits(const struct rohc_decomp *const decomp,
-                                             size_t *const k, size_t *const n,
-                                             size_t *const k_1, size_t *const n_1,
-                                             size_t *const k_2, size_t *const n_2)
-	__attribute__((warn_unused_result));
-
 /* decompression library features */
 
 bool ROHC_EXPORT rohc_decomp_set_features(struct rohc_decomp *const decomp,

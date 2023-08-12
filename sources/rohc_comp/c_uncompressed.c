@@ -85,15 +85,6 @@ static int uncompressed_code_normal_packet(const struct rohc_comp_ctxt *const co
 /* re-initialize a context */
 static bool c_uncompressed_reinit_context(struct rohc_comp_ctxt *const context);
 
-/* deliver feedbacks */
-static bool uncomp_feedback(struct rohc_comp_ctxt *const context,
-                            const enum rohc_feedback_type feedback_type,
-                            const uint8_t *const packet,
-                            const size_t packet_len,
-                            const uint8_t *const feedback_data,
-                            const size_t feedback_data_len)
-	__attribute__((warn_unused_result, nonnull(1, 3, 5)));
-
 /* mode and state transitions */
 static void uncompressed_decide_state(struct rohc_comp_ctxt *const context,
                                       const struct rohc_ts pkt_time,
@@ -250,72 +241,6 @@ static bool c_uncompressed_reinit_context(struct rohc_comp_ctxt *const context)
 
 	return true;
 }
-
-
-/**
- * @brief Update the profile when feedback is received
- *
- * This function is one of the functions that must exist in one profile for
- * the framework to work.
- *
- * @param context            The compression context
- * @param feedback_type      The feedback type among ROHC_FEEDBACK_1 and ROHC_FEEDBACK_2
- * @param packet             The whole feedback packet with CID bits
- * @param packet_len         The length of the whole feedback packet with CID bits
- * @param feedback_data      The feedback data without the CID bits
- * @param feedback_data_len  The length of the feedback data without the CID bits
- * @return                   true if the feedback was successfully handled,
- *                           false if the feedback could not be taken into account
- */
-static bool uncomp_feedback(struct rohc_comp_ctxt *const context,
-                            const enum rohc_feedback_type feedback_type,
-                            const uint8_t *const packet __attribute__((unused)),
-                            const size_t packet_len __attribute__((unused)),
-                            const uint8_t *const feedback_data,
-                            const size_t feedback_data_len)
-{
-	const uint8_t *remain_data = feedback_data;
-	size_t remain_len = feedback_data_len;
-
-	/* only FEEDBACK-1 is support by the Uncompressed profile */
-	if(feedback_type != ROHC_FEEDBACK_1)
-	{
-		rohc_comp_warn(context, "feedback type not handled (%d)", feedback_type);
-		goto error;
-	}
-
-	rohc_comp_debug(context, "FEEDBACK-1 received");
-	assert(remain_len == 1);
-
-	/* FEEDBACK-1 profile-specific octet shall be 0 */
-	if(remain_data[0] != 0x00)
-	{
-		rohc_comp_warn(context, "profile-specific byte in FEEDBACK-1 should be zero "
-		               "for Uncompressed profile but it is 0x%02x", remain_data[0]);
-#ifdef ROHC_RFC_STRICT_DECOMPRESSOR
-		goto error;
-#endif
-	}
-
-	/* positive ACK received in U-mode: switch to O-mode */
-	if(context->mode == ROHC_U_MODE)
-	{
-		rohc_comp_change_mode(context, ROHC_O_MODE);
-	}
-
-	/* positive ACK received in IR state: the compressor got the confidence that
-	 * the decompressor fully received the context, so switch to FO state */
-	if(context->state == ROHC_COMP_STATE_IR)
-	{
-		rohc_comp_change_state(context, ROHC_COMP_STATE_FO);
-	}
-
-	return true;
-
-error:
-	return false;
-}
-
 
 /**
  * @brief Decide the state that should be used for the next packet.
@@ -621,6 +546,5 @@ const struct rohc_comp_profile c_uncompressed_profile =
 	.check_context  = c_uncompressed_check_context,
 	.encode         = c_uncompressed_encode,
 	.reinit_context = c_uncompressed_reinit_context,
-	.feedback       = uncomp_feedback,
 };
 

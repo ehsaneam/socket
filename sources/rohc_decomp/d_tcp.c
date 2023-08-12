@@ -423,12 +423,6 @@ static void d_tcp_create_from_ctxt(struct rohc_decomp_ctxt *const ctxt,
 	/* keep the volatile parts of the decompression context,
 	 * but reset the ACK rate-limiting */
 	ctxt->last_pkts_errors = 0;
-	ctxt->last_pkt_feedbacks[ROHC_FEEDBACK_ACK].needed = 0;
-	ctxt->last_pkt_feedbacks[ROHC_FEEDBACK_ACK].sent = 0;
-	ctxt->last_pkt_feedbacks[ROHC_FEEDBACK_NACK].needed = 0;
-	ctxt->last_pkt_feedbacks[ROHC_FEEDBACK_NACK].sent = 0;
-	ctxt->last_pkt_feedbacks[ROHC_FEEDBACK_STATIC_NACK].needed = 0;
-	ctxt->last_pkt_feedbacks[ROHC_FEEDBACK_STATIC_NACK].sent = 0;
 
 	/* init the context for packet/context corrections upon CRC failures */
 	/* at the beginning, no attempt to correct CRC failure */
