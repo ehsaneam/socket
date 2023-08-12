@@ -24,21 +24,11 @@ int decompressPacket(unsigned char *rohc_buffer, int rohc_len, unsigned char *ip
     /* the buffer that will contain the resulting IP packet */
 	struct rohc_buf ip_packet = rohc_buf_init_empty(ip_buffer, BUFFER_SIZE);
 
-    // uint8_t feedback_code;
-    // uint8_t feedback_full_len;
-    // uint8_t feedback_data_len;
-    // uint8_t feedback_type;
-    // unsigned char* feedback_buf[BUFFER_SIZE];
-    // struct rohc_buf feedback_send =
-    //     rohc_buf_init_empty(feedback_buf, MAX_ROHC_SIZE);
-    struct rohc_buf *feedback_send = NULL;
-	struct rohc_buf *rcvd_feedback = NULL;
-
     rohc_status_t status;
 
     /* Now, decompress the ROHC packet */
     status = rohc_decompress3(decompressor, rohc_packet, &ip_packet,
-	                          rcvd_feedback, feedback_send);
+	                          NULL, NULL);
 
     if( status!=ROHC_STATUS_OK )
 	{
@@ -50,17 +40,6 @@ int decompressPacket(unsigned char *rohc_buffer, int rohc_len, unsigned char *ip
         PRINT_WARN_ROHC("no IP packet decompressed\n");
         return 0;
     }
-    // else if(rohc_buf_is_empty(feedback_send))
-    // {
-    //     PRINT_WARN_ROHC("no feedback generated while one was expected\n");
-    //     return -1;
-    // }
-    // else if((rohc_buf_byte(feedback_send) & 0xf8) != 0xf0)
-    // {
-    //     PRINT_WARN_ROHC("\tfeedback should start with the bits 0b11110\n");
-    //     return -1;
-    // }
-    // PRINT_INFO_ROHC("%zu-byte feedback generated, magic number found\n", feedback_send.len);
     return ip_packet.len;
 }
 

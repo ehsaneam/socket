@@ -264,9 +264,6 @@ static struct rohc_decomp_ctxt * context_create(struct rohc_decomp *decomp,
 	context->mode = ROHC_U_MODE;
 	context->state = ROHC_DECOMP_STATE_NC;
 
-	/* counters and thresholds for feedbacks and downward state transitions */
-	context->last_pkts_errors = 0;
-
 	/* init the context for packet/context corrections upon CRC failures */
 	/* at the beginning, no attempt to correct CRC failure */
 	context->crc_corr.algo = ROHC_DECOMP_CRC_CORR_SN_NONE;
@@ -638,6 +635,8 @@ rohc_status_t rohc_decompress3(struct rohc_decomp *const decomp,
 	rohc_status_t status = ROHC_STATUS_ERROR; /* error status by default */
 	struct rohc_decomp_stream stream;
 
+	assert(feedback_send==NULL || feedback_send!=NULL);
+
 	/* check inputs validity */
 	if(decomp == NULL)
 	{
@@ -672,36 +671,6 @@ rohc_status_t rohc_decompress3(struct rohc_decomp *const decomp,
 		rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
 		             "given uncomp_packet is not empty");
 		goto error;
-	}
-	if(rcvd_feedback != NULL)
-	{
-		if(rohc_buf_is_malformed(*rcvd_feedback))
-		{
-			rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-			             "given rcvd_feedback is malformed");
-			goto error;
-		}
-		if(!rohc_buf_is_empty(*rcvd_feedback))
-		{
-			rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-			             "given rcvd_feedback is not empty");
-			goto error;
-		}
-	}
-	if(feedback_send != NULL)
-	{
-		if(rohc_buf_is_malformed(*feedback_send))
-		{
-			rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-			             "given feedback_send is malformed");
-			goto error;
-		}
-		if(!rohc_buf_is_empty(*feedback_send))
-		{
-			rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-			             "given feedback_send is not empty");
-			goto error;
-		}
 	}
 
 	decomp->stats.received++;
@@ -879,6 +848,7 @@ static rohc_status_t d_decode_header(struct rohc_decomp *decomp,
 	bool is_new_context = false;
 	size_t add_cid_len;
 	size_t large_cid_len;
+	assert(rcvd_feedback==NULL || rcvd_feedback!=NULL);
 
 	struct rohc_buf remain_rohc_data = rohc_packet;
 	const uint8_t *walk;
@@ -923,12 +893,6 @@ static rohc_status_t d_decode_header(struct rohc_decomp *decomp,
 		goto error_malformed;
 	}
 
-	if(rcvd_feedback != NULL)
-	{
-		rohc_debug(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-		           "decompressor received %zu bytes of feedback for the "
-		           "same-side associated compressor", rcvd_feedback->len);
-	}
 	walk = rohc_buf_data(remain_rohc_data);
 	remain_len = remain_rohc_data.len;
 

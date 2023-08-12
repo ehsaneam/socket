@@ -68,8 +68,6 @@ int compDecompTest()
     }
     unsigned char decomp_buffer[BUFFER_SIZE];
 	struct rohc_buf decomp_packet = rohc_buf_init_empty(decomp_buffer, BUFFER_SIZE);
-    struct rohc_buf *rcvd_feedback = NULL;
-	struct rohc_buf *feedback_send = NULL;
     if( initDecompressor(ROHC_LARGE_CID)<0 )
     {
         exit(EXIT_FAILURE);
@@ -81,7 +79,7 @@ int compDecompTest()
 		return -1;
 	}
     status = rohc_decompress3(decompressor, rohc_packet, &decomp_packet,
-	                          rcvd_feedback, feedback_send);
+	                          NULL, NULL);
     dumpPacket((unsigned char*)decomp_buffer, decomp_packet.len, "1-uncompressed buffer");
     if( status==ROHC_STATUS_OK )
 	{
@@ -136,8 +134,6 @@ int compDecompTest2(unsigned char *ip_buffer, int ip_len)
     }
     unsigned char decomp_buffer[BUFFER_SIZE];
 	struct rohc_buf decomp_packet = rohc_buf_init_empty(decomp_buffer, BUFFER_SIZE);
-    struct rohc_buf *rcvd_feedback = NULL;
-	struct rohc_buf *feedback_send = NULL;
     if( initDecompressor(ROHC_LARGE_CID)<0 )
     {
         exit(EXIT_FAILURE);
@@ -149,7 +145,7 @@ int compDecompTest2(unsigned char *ip_buffer, int ip_len)
 		return -1;
 	}
     status = rohc_decompress3(decompressor, rohc_packet, &decomp_packet,
-	                          rcvd_feedback, feedback_send);
+	                          NULL, NULL);
     if( status==ROHC_STATUS_OK )
 	{
         if(!rohc_buf_is_empty(ip_packet))

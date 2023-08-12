@@ -98,41 +98,6 @@ struct d_statistics
 	unsigned long corrected_wrong_sn_updates;
 };
 
-
-/**
- * @brief The user configuration for feedback rate-limiting
- *
- * The k and n parameters define a ratio of packets for rate-limiting: an action
- * is performed only for k packets out of the last n packets.
- */
-struct rohc_ack_rate_limit
-{
-	size_t k;          /**< The k rate-limit parameter */
-	size_t n;          /**< The n rate-limit parameter */
-	size_t threshold;  /**< The computed k/n ratio */
-};
-
-
-/** The user configuration for feedback rate-limiting */
-struct rohc_ack_rate_limits
-{
-	/** The rate-limit parameters to avoid sending feedback too often */
-	struct rohc_ack_rate_limit speed;
-	/** The rate-limit parameters to avoid sending NACKs too quickly */
-	struct rohc_ack_rate_limit nack;
-	/** The rate-limit parameters to avoid sending STATIC-NACKs too quickly */
-	struct rohc_ack_rate_limit static_nack;
-};
-
-
-/** The statistics collected about the last needed/sent feedbacks */
-struct rohc_ack_stats
-{
-	uint32_t needed;  /**< The needed feedbacks over the last 32 packets */
-	uint32_t sent;    /**< The sent feedbacks over the last 32 packets */
-};
-
-
 /**
  * @brief The ROHC decompressor
  */
