@@ -144,24 +144,6 @@ static bool d_tcp_build_eol(const struct rohc_decomp_ctxt *const context,
                             size_t *const opt_len)
 	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4, 5)));
 
-static int d_tcp_parse_mss_list_item(const struct rohc_decomp_ctxt *const context,
-                                     const uint8_t *const data,
-                                     const size_t data_len,
-                                     struct d_tcp_opt_ctxt *const opt_ctxt)
-	__attribute__((warn_unused_result, nonnull(1, 2, 4)));
-static int d_tcp_parse_mss_irreg(const struct rohc_decomp_ctxt *const context,
-                                 const uint8_t *const data,
-                                 const size_t data_len,
-                                 const uint8_t opt_index,
-                                 struct d_tcp_opt_ctxt *const opt_ctxt)
-	__attribute__((warn_unused_result, nonnull(1, 2, 5)));
-static bool d_tcp_build_mss(const struct rohc_decomp_ctxt *const context,
-                            const struct rohc_tcp_decoded_values *const decoded,
-                            const struct d_tcp_opt_ctxt *const tcp_opt,
-                            struct rohc_buf *const uncomp_packet,
-                            size_t *const opt_len)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4, 5)));
-
 static int d_tcp_parse_ws_list_item(const struct rohc_decomp_ctxt *const context,
                                     const uint8_t *const data,
                                     const size_t data_len,
@@ -264,10 +246,6 @@ static struct d_tcp_opt d_tcp_opts[MAX_TCP_OPTION_INDEX + 1] =
 	                          "End of Option List (EOL)",
 	                          d_tcp_parse_eol_list_item, d_tcp_parse_eol_irreg,
 	                          d_tcp_build_eol },
-	[TCP_INDEX_MSS]       = { TCP_INDEX_MSS, true, TCP_OPT_MSS,
-	                          "Maximum Segment Size (MSS)",
-	                          d_tcp_parse_mss_list_item, d_tcp_parse_mss_irreg,
-	                          d_tcp_build_mss },
 	[TCP_INDEX_WS]        = { TCP_INDEX_WS, true, TCP_OPT_WS,
 	                          "Window Scale (WS)",
 	                          d_tcp_parse_ws_list_item, d_tcp_parse_ws_irreg,
@@ -836,78 +814,6 @@ static bool d_tcp_build_eol(const struct rohc_decomp_ctxt *const context,
 error:
 	return false;
 }
-
-
-/* TODO */
-static int d_tcp_parse_mss_list_item(const struct rohc_decomp_ctxt *const context,
-                                     const uint8_t *const data,
-                                     const size_t data_len,
-                                     struct d_tcp_opt_ctxt *const opt_ctxt)
-{
-	const size_t mss_list_item_len = sizeof(uint16_t);
-
-	if(data_len < mss_list_item_len)
-	{
-		rohc_decomp_warn(context, "malformed TCP options list: malformed TCP option "
-		                 "items: only %zu bytes available while at least %zu bytes "
-		                 "required for MSS option", data_len, mss_list_item_len);
-		goto error;
-	}
-	opt_ctxt->data.mss.is_static = false;
-	memcpy(&opt_ctxt->data.mss.value, data, mss_list_item_len);
-	opt_ctxt->data.mss.value = rohc_ntoh16(opt_ctxt->data.mss.value);
-	rohc_decomp_debug(context, "    TCP option MAXSEG = %u (0x%04x)",
-	                  opt_ctxt->data.mss.value, opt_ctxt->data.mss.value);
-
-	return mss_list_item_len;
-
-error:
-	return -1;
-}
-
-
-/* TODO */
-static int d_tcp_parse_mss_irreg(const struct rohc_decomp_ctxt *const context __attribute__((unused)),
-                                 const uint8_t *const data __attribute__((unused)),
-                                 const size_t data_len __attribute__((unused)),
-                                 const uint8_t opt_index __attribute__((unused)),
-                                 struct d_tcp_opt_ctxt *const opt_ctxt __attribute__((unused)))
-{
-	opt_ctxt->data.mss.is_static = true;
-	return 0;
-}
-
-
-/* TODO */
-static bool d_tcp_build_mss(const struct rohc_decomp_ctxt *const context,
-                            const struct rohc_tcp_decoded_values *const decoded __attribute__((unused)),
-                            const struct d_tcp_opt_ctxt *const tcp_opt,
-                            struct rohc_buf *const uncomp_packet,
-                            size_t *const opt_len)
-{
-	const size_t mss_len = 2 + sizeof(uint16_t);
-	const uint16_t mss_value_nbo = rohc_hton16(tcp_opt->data.mss.value);
-
-	if(rohc_buf_avail_len(*uncomp_packet) < mss_len)
-	{
-		rohc_decomp_warn(context, "output buffer too small for the %zu-byte "
-		                 "TCP MSS option", mss_len);
-		goto error;
-	}
-
-	rohc_buf_byte_at(*uncomp_packet, 0) = TCP_OPT_MSS;
-	uncomp_packet->len++;
-	rohc_buf_byte_at(*uncomp_packet, 1) = mss_len;
-	uncomp_packet->len++;
-	rohc_buf_append(uncomp_packet, (uint8_t *) &mss_value_nbo, sizeof(uint16_t));
-	*opt_len = mss_len;
-
-	return true;
-
-error:
-	return false;
-}
-
 
 /* TODO */
 static int d_tcp_parse_ws_list_item(const struct rohc_decomp_ctxt *const context,

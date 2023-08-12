@@ -78,8 +78,6 @@ typedef enum
 {
 	/** The action was successful */
 	ROHC_STATUS_OK                = 0,
-	/** The action was successful but packet needs to be segmented */
-	ROHC_STATUS_SEGMENT           = 1,
 	/** The action failed due to a malformed packet */
 	ROHC_STATUS_MALFORMED         = 2,
 	/** The action failed because no matching context exists */

@@ -286,10 +286,6 @@ rohc_status_t ROHC_EXPORT rohc_comp_pad(struct rohc_comp *const comp,
                                         const size_t min_pkt_len)
 	__attribute__((warn_unused_result));
 
-rohc_status_t ROHC_EXPORT rohc_comp_get_segment2(struct rohc_comp *const comp,
-                                                 struct rohc_buf *const segment)
-	__attribute__((warn_unused_result));
-
 bool ROHC_EXPORT rohc_comp_force_contexts_reinit(struct rohc_comp *const comp)
 	__attribute__((warn_unused_result));
 
@@ -314,13 +310,6 @@ bool ROHC_EXPORT rohc_comp_enable_profiles(struct rohc_comp *const comp,
 	__attribute__((warn_unused_result));
 bool ROHC_EXPORT rohc_comp_disable_profiles(struct rohc_comp *const comp,
                                             ...)
-	__attribute__((warn_unused_result));
-
-bool ROHC_EXPORT rohc_comp_set_mrru(struct rohc_comp *const comp,
-                                    const size_t mrru)
-	__attribute__((warn_unused_result));
-bool ROHC_EXPORT rohc_comp_get_mrru(const struct rohc_comp *const comp,
-                                    size_t *const mrru)
 	__attribute__((warn_unused_result));
 
 bool ROHC_EXPORT rohc_comp_get_max_cid(const struct rohc_comp *const comp,

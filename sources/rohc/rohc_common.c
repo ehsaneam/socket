@@ -78,8 +78,6 @@ const char * rohc_strerror(const rohc_status_t status)
 	{
 		case ROHC_STATUS_OK:
 			return "resulting packet available";
-		case ROHC_STATUS_SEGMENT:
-			return "resulting packet needs to be segmented";
 		case ROHC_STATUS_MALFORMED:
 			return "malformed packet";
 		case ROHC_STATUS_NO_CONTEXT:

@@ -233,7 +233,6 @@ struct rohc_comp * rohc_comp_new2(const rohc_cid_type_t cid_type,
 
 	comp->medium.cid_type = cid_type;
 	comp->medium.max_cid = max_cid;
-	comp->mrru = 0; /* no segmentation by default */
 	comp->random_cb = rand_cb;
 	comp->random_cb_ctxt = rand_priv;
 
@@ -613,98 +612,22 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 	rohc_buf_pull(rohc_packet, rohc_hdr_size);
 	payload_size = ip_pkt.len - payload_offset;
 
-	/* is packet too large for output buffer? */
-	if(payload_size > rohc_buf_avail_len(*rohc_packet))
-	{
-		const size_t max_rohc_buf_len =
-			rohc_buf_avail_len(*rohc_packet) + rohc_hdr_size;
-		uint32_t rru_crc;
+	/* copy full payload after ROHC header */
+	rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
+				"copy full %zd-byte payload", payload_size);
+	rohc_buf_append(rohc_packet,
+					rohc_buf_data_at(uncomp_packet, payload_offset),
+					payload_size);
 
-		/* resulting ROHC packet too large, segmentation may be a solution */
-		rohc_info(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		          "%s ROHC packet is too large for the given output buffer, "
-		          "try to segment it (input size = %zd, maximum output "
-		          "size = %zd, required output size = %d + %zd = %zd, "
-		          "MRRU = %zd)", rohc_get_packet_descr(packet_type),
-		          uncomp_packet.len, max_rohc_buf_len, rohc_hdr_size,
-		          payload_size, rohc_hdr_size + payload_size, comp->mrru);
+	/* unhide the ROHC header */
+	rohc_buf_push(rohc_packet, rohc_hdr_size);
+	rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
+				"ROHC size = %zd bytes (header = %d, payload = %zu), output "
+				"buffer size = %zu", rohc_packet->len, rohc_hdr_size,
+				payload_size, rohc_buf_avail_len(*rohc_packet));
 
-		/* in order to be segmented, a ROHC packet shall be <= MRRU
-		 * (remember that MRRU includes the CRC length) */
-		if((payload_size + CRC_FCS32_LEN) > comp->mrru)
-		{
-			rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-			             "%s ROHC packet cannot be segmented: too large (%d + "
-			             "%zu + %u = %zu bytes) for MRRU (%zu bytes)",
-			             rohc_get_packet_descr(packet_type), rohc_hdr_size,
-			             payload_size, CRC_FCS32_LEN, rohc_hdr_size +
-			             payload_size + CRC_FCS32_LEN, comp->mrru);
-			goto error_free_new_context;
-		}
-		rohc_info(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		          "%s ROHC packet can be segmented (MRRU = %zd)",
-		          rohc_get_packet_descr(packet_type), comp->mrru);
-
-		/* store the whole ROHC packet in compressor (headers and payload only,
-		 * not feedbacks, feedbacks will be transmitted with the first segment
-		 * when rohc_comp_get_segment2() is called) */
-		if(comp->rru_len != 0)
-		{
-			/* warn users about previous, not yet retrieved RRU */
-			rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-			             "erase the existing %zd-byte RRU that was not "
-			             "retrieved yet (call rohc_comp_get_segment2() to add "
-			             "support for ROHC segments in your application)",
-			             comp->rru_len);
-		}
-		comp->rru_len = 0;
-		comp->rru_off = 0;
-		/* ROHC header */
-		rohc_buf_push(rohc_packet, rohc_hdr_size);
-		memcpy(comp->rru + comp->rru_off, rohc_buf_data(*rohc_packet),
-		       rohc_hdr_size);
-		comp->rru_len += rohc_hdr_size;
-		/* ROHC payload */
-		memcpy(comp->rru + comp->rru_off + comp->rru_len,
-		       rohc_buf_data_at(uncomp_packet, payload_offset), payload_size);
-		comp->rru_len += payload_size;
-		/* compute FCS-32 CRC over header and payload (optional feedbacks and
-		   the CRC field itself are excluded) */
-		rru_crc = crc_calc_fcs32(comp->rru + comp->rru_off, comp->rru_len,
-		                         CRC_INIT_FCS32);
-		memcpy(comp->rru + comp->rru_off + comp->rru_len, &rru_crc,
-		       CRC_FCS32_LEN);
-		comp->rru_len += CRC_FCS32_LEN;
-		rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		           "RRU 32-bit FCS CRC = 0x%08x", rohc_ntoh32(rru_crc));
-		/* computed RRU must be <= MRRU */
-		assert(comp->rru_len <= comp->mrru);
-
-		/* reset the length of the ROHC packet: it shall be 0 for users */
-		rohc_packet->len = 0;
-
-		/* report to users that segmentation is possible */
-		status = ROHC_STATUS_SEGMENT;
-	}
-	else
-	{
-		/* copy full payload after ROHC header */
-		rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		           "copy full %zd-byte payload", payload_size);
-		rohc_buf_append(rohc_packet,
-		                rohc_buf_data_at(uncomp_packet, payload_offset),
-		                payload_size);
-
-		/* unhide the ROHC header */
-		rohc_buf_push(rohc_packet, rohc_hdr_size);
-		rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		           "ROHC size = %zd bytes (header = %d, payload = %zu), output "
-		           "buffer size = %zu", rohc_packet->len, rohc_hdr_size,
-		           payload_size, rohc_buf_avail_len(*rohc_packet));
-
-		/* report to user that compression was successful */
-		status = ROHC_STATUS_OK;
-	}
+	/* report to user that compression was successful */
+	status = ROHC_STATUS_OK;
 
 	/* update some statistics:
 	 *  - compressor statistics
@@ -835,151 +758,6 @@ rohc_status_t rohc_comp_pad(struct rohc_comp *const comp,
 error:
 	return status;
 }
-
-
-/**
- * @brief Get the next ROHC segment if any
- *
- * Get the next ROHC segment if any.
- *
- * To get all the segments of one ROHC packet, call this function until
- * \ref ROHC_STATUS_OK or \ref ROHC_STATUS_ERROR is returned.
- *
- * @param comp          The ROHC compressor
- * @param[out] segment  The buffer where to store the ROHC segment
- * @return              Possible return values:
- *                       \li \ref ROHC_STATUS_SEGMENT if a ROHC segment is
- *                           returned and more segments are available,
- *                       \li \ref ROHC_STATUS_OK if a ROHC segment is returned
- *                           and no more ROHC segment is available
- *                       \li \ref ROHC_STATUS_ERROR if an error occurred
- *
- * @ingroup rohc_comp
- *
- * \par Example:
- * \snippet test_segment.c define ROHC compressor
- * \code
-        ...
-        // compress the IP packet with a small ROHC buffer
-\endcode
- * \snippet test_segment.c segment ROHC packet #1
- * \snippet test_segment.c segment ROHC packet #2
- * \code
-                        ...
-                        // decompress the ROHC segment here, the function
-                        // rohc_decompress3 shall return ROHC_STATUS_OK
-                        // and no decompressed packet
-                        ...
-\endcode
- * \snippet test_segment.c segment ROHC packet #3
- * \code
-                // decompress the final ROHC segment here, the function
-                // rohc_decompress4 shall return ROHC_STATUS_OK
-\endcode
- * \snippet test_segment.c segment ROHC packet #4
- * \code
-                // handle compression error here
-                ...
-\endcode
- *
- * @see rohc_comp_get_mrru
- * @see rohc_comp_set_mrru
- * @see rohc_compress4
- */
-rohc_status_t rohc_comp_get_segment2(struct rohc_comp *const comp,
-                                     struct rohc_buf *const segment)
-
-{
-	const size_t segment_type_len = 1; /* segment type byte */
-	size_t max_data_len;
-	rohc_status_t status;
-
-	/* check input parameters */
-	if(comp == NULL)
-	{
-		goto error;
-	}
-	if(segment == NULL)
-	{
-		rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		             "given segment cannot be NULL");
-		goto error;
-	}
-	if(rohc_buf_is_malformed(*segment))
-	{
-		rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		             "given segment is malformed");
-		goto error;
-	}
-	if(!rohc_buf_is_empty(*segment))
-	{
-		rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		             "given segment is not empty");
-		goto error;
-	}
-
-	/* no segment yet */
-	segment->len = 0;
-
-	/* abort if no RRU is available in the compressor */
-	if(comp->rru_len == 0)
-	{
-		rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		             "no RRU available in given compressor");
-		goto error;
-	}
-
-	/* abort is the given output buffer is too small for RRU */
-	if(rohc_buf_avail_len(*segment) <= segment_type_len)
-	{
-		rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		             "output buffer is too small for RRU, more than %zd bytes "
-		             "are required", segment_type_len);
-		goto error;
-	}
-
-	/* how many bytes of ROHC packet can we put in that new segment? */
-	max_data_len = rohc_min(rohc_buf_avail_len(*segment) - segment_type_len,
-	                        comp->rru_len);
-	assert(max_data_len > 0);
-	rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-	           "copy %zd bytes of the remaining %zd bytes of ROHC packet and "
-	           "CRC in the segment", max_data_len, comp->rru_len);
-
-	/* set segment type with F bit set only for last segment */
-	rohc_buf_byte_at(*segment, 0) = 0xfe | (max_data_len == comp->rru_len);
-	segment->len++;
-	rohc_buf_pull(segment, 1);
-
-	/* copy remaining ROHC data (CRC included) */
-	rohc_buf_append(segment, comp->rru + comp->rru_off, max_data_len);
-	rohc_buf_pull(segment, max_data_len);
-	comp->rru_off += max_data_len;
-	comp->rru_len -= max_data_len;
-
-	/* set status wrt to (non-)final segment */
-	if(comp->rru_len == 0)
-	{
-		/* final segment, no more segment available */
-		status = ROHC_STATUS_OK;
-		/* reset context for next RRU */
-		comp->rru_off = 0;
-	}
-	else
-	{
-		/* non-final segment, more segments to available */
-		status = ROHC_STATUS_SEGMENT;
-	}
-
-	/* shift backward the RRU data, header and the feedback data */
-	rohc_buf_push(segment, max_data_len + 1);
-
-	return status;
-
-error:
-	return ROHC_STATUS_ERROR;
-}
-
 
 /**
  * @brief Force the compressor to re-initialize all its contexts
@@ -1582,135 +1360,6 @@ error:
 	return false;
 }
 
-
-/**
- * @brief Set the Maximum Reconstructed Reception Unit (MRRU).
- *
- * Set the Maximum Reconstructed Reception Unit (MRRU).
- *
- * The MRRU is the largest cumulative length (in bytes) of the ROHC segments
- * that are parts of the same ROHC packet. In short, the ROHC decompressor
- * does not expect to reassemble ROHC segments whose total length is larger
- * than MRRU. So, the ROHC compressor shall not segment ROHC packets greater
- * than the MRRU.
- *
- * The MRRU value must be in range [0 ; \ref ROHC_MAX_MRRU]. Remember that the
- * MRRU includes the 32-bit CRC that protects it.
- * If set to 0, segmentation is disabled as no segment headers are allowed
- * on the channel. No segment will be generated.
- *
- * If segmentation is enabled and used by the compressor, the function
- * \ref rohc_comp_get_segment2 can be used to retrieve ROHC segments.
- *
- * @param comp  The ROHC compressor
- * @param mrru  The new MRRU value (in bytes)
- * @return      true if the MRRU was successfully set, false otherwise
- *
- * @ingroup rohc_comp
- *
- * \par Example:
- * \snippet test_segment.c define ROHC compressor
- * \code
-        size_t mrru = 500;
-        ...
-\endcode
- * \snippet test_segment.c set compressor MRRU
- * \code
-        ...
-\endcode
- *
- * @see rohc_comp_get_mrru
- * @see rohc_comp_get_segment2
- * @see rohc_decomp_set_mrru
- */
-bool rohc_comp_set_mrru(struct rohc_comp *const comp,
-                        const size_t mrru)
-{
-	/* compressor must be valid */
-	if(comp == NULL)
-	{
-		/* cannot print a trace without a valid compressor */
-		goto error;
-	}
-
-	/* new MRRU value must be in range [0, ROHC_MAX_MRRU] */
-	if(mrru > ROHC_MAX_MRRU)
-	{
-		rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		             "unexpected MRRU value: must be in range [0, %d]",
-		             ROHC_MAX_MRRU);
-		goto error;
-	}
-
-	/* set new MRRU */
-	comp->mrru = mrru;
-	rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-	           "MRRU is now set to %zd", comp->mrru);
-
-	return true;
-
-error:
-	return false;
-}
-
-
-/**
- * @brief Get the Maximum Reconstructed Reception Unit (MRRU).
- *
- * Get the current Maximum Reconstructed Reception Unit (MRRU).
- *
- * The MRRU is the largest cumulative length (in bytes) of the ROHC segments
- * that are parts of the same ROHC packet. In short, the ROHC decompressor
- * does not expect to reassemble ROHC segments whose total length is larger
- * than MRRU. So, the ROHC compressor shall not segment ROHC packets greater
- * than the MRRU.
- *
- * The MRRU value must be in range [0 ; \ref ROHC_MAX_MRRU]. Remember that the
- * MRRU includes the 32-bit CRC that protects it.
- * If MRRU value is 0, segmentation is disabled.
- *
- * If segmentation is enabled and used by the compressor, the function
- * \ref rohc_comp_get_segment2 can be used to retrieve ROHC segments.
- *
- * @param comp       The ROHC compressor
- * @param[out] mrru  The current MRRU value (in bytes)
- * @return           true if MRRU was successfully retrieved, false otherwise
- *
- * @ingroup rohc_comp
- *
- * \par Example:
- * \snippet test_segment.c define ROHC compressor
- * \code
-        size_t mrru;
-        ...
-\endcode
- * \snippet test_non_regression.c get compressor MRRU
- * \code
-        printf("the current MMRU at compressor is %zu bytes\n", mrru);
-        ...
-\endcode
- *
- * @see rohc_comp_set_mrru
- * @see rohc_comp_get_segment2
- * @see rohc_decomp_set_mrru
- * @see rohc_decomp_get_mrru
- */
-bool rohc_comp_get_mrru(const struct rohc_comp *const comp,
-                        size_t *const mrru)
-{
-	if(comp == NULL || mrru == NULL)
-	{
-		goto error;
-	}
-
-	*mrru = comp->mrru;
-	return true;
-
-error:
-	return false;
-}
-
-
 /**
  * @brief Get the maximal CID value the compressor uses
  *
@@ -2284,7 +1933,6 @@ static struct rohc_comp_ctxt *
 	size_t num_used_ctxt_seen = 0;
 	rohc_cid_t i;
 
-	size_t best_cr_score = 0;
 	bool do_ctxt_replication = false;
 	rohc_cid_t best_ctxt_for_replication = ROHC_LARGE_CID_MAX + 1;
 
@@ -2311,9 +1959,6 @@ static struct rohc_comp_ctxt *
 	/* get the context using help from the profile we just found */
 	for(i = 0; i <= comp->medium.max_cid; i++)
 	{
-		bool is_feedback_channel_available;
-		bool is_static_part_transmitted;
-		bool is_ctxt_established;
 		size_t cr_score = 0;
 
 		context = &comp->contexts[i];
@@ -2380,26 +2025,6 @@ static struct rohc_comp_ctxt *
 		}
 		rohc_comp_debug(context, "context CID %zu scores %zu for Context Replication",
 		                context->cid, cr_score);
-
-		/* several contexts may be used as basis for context replication:
-		 *  - drop the ones that are not fully established with decompressor (fully
-		 *    established means that the static part of the context was explicitely
-		 *    acknowledged by the decompressor through one ACK protected by a CRC),
-		 *  - keep the one that is the nearest from the new stream (more bytes
-		 *    in common) */
-		is_feedback_channel_available = !!(context->mode > ROHC_U_MODE);
-		is_static_part_transmitted = !!(context->state == ROHC_COMP_STATE_FO ||
-		                                context->state == ROHC_COMP_STATE_SO);
-		is_ctxt_established =
-			(is_feedback_channel_available && is_static_part_transmitted);
-		if(is_ctxt_established && cr_score > best_cr_score)
-		{
-			do_ctxt_replication = true;
-			best_ctxt_for_replication = context->cid;
-			best_cr_score = cr_score;
-			rohc_comp_debug(context, "context CID %zu is best for Context Replication",
-			                context->cid);
-		}
 
 		/* if all used contexts were checked, no need go search further */
 		if(num_used_ctxt_seen >= comp->num_contexts_used)

@@ -173,7 +173,6 @@ typedef enum
 {
 	TCP_OPT_EOL       = 0U,  /**< The End of Option List (EOL) TCP option */
 	TCP_OPT_NOP       = 1U,  /**< The No OPeration (NOP) TCP option */
-	TCP_OPT_MSS       = 2U,  /**< The Maximum Segment Size (MSS) TCP option */
 #define TCP_OLEN_MSS         4U
 	TCP_OPT_WS        = 3U,  /**< The Window Scale (WS) TCP option */
 #define TCP_OLEN_WS          3U
@@ -1091,8 +1090,6 @@ static inline char * tcp_opt_get_descr(const uint8_t opt_type)
 			return "EOL";
 		case TCP_OPT_NOP:
 			return "NOP";
-		case TCP_OPT_MSS:
-			return "MSS";
 		case TCP_OPT_WS:
 			return "Window Scale";
 		case TCP_OPT_SACK_PERM:

@@ -37,8 +37,6 @@
  */
 
 /* ROHC segment */
-bool rohc_decomp_packet_is_segment(const uint8_t *const data)
-	__attribute__((warn_unused_result, nonnull(1), pure));
 bool rohc_decomp_packet_is_padding(const uint8_t *const data)
 	__attribute__((warn_unused_result, nonnull(1), pure));
 

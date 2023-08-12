@@ -151,19 +151,6 @@ struct rohc_comp
 	/** The table to enable fast CRC-8 computation */
 	uint8_t crc_table_8[256];
 
-
-	/* segment-related variables */
-
-/** The maximal value for MRRU */
-#define ROHC_MAX_MRRU 65535
-	/** The remaining bytes of the Reconstructed Reception Unit (RRU) waiting
-	 *  to be split into segments */
-	uint8_t rru[ROHC_MAX_MRRU];
-	/** The offset of the remaining bytes in the RRU buffer */
-	size_t rru_off;
-	/** The number of the remaining bytes in the RRU buffer */
-	size_t rru_len;
-
 	/* some statistics about the compression process: */
 
 	/** The number of sent packets */
@@ -201,8 +188,6 @@ struct rohc_comp
 	/** The maximal delay spent in > FO states (= SO state) before changing back
 	 *  the state to FO (periodic refreshes) */
 	uint64_t periodic_refreshes_fo_timeout_time;
-	/** Maximum Reconstructed Reception Unit */
-	size_t mrru;
 	/** The connection type (currently not used) */
 	int connection_type;
 	/** The number of uncompressed transmissions for list compression (L) */

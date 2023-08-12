@@ -30,15 +30,7 @@ int compressPacket(unsigned char *ip_buffer, int ip_len, unsigned char *rohc_buf
     /* Now, compress IP packet */
     status = rohc_compress4(compressor, ip_packet, &rohc_packet);
 
-    if( status==ROHC_STATUS_SEGMENT )
-	{
-        PRINT_ERR_ROHC("resulting ROHC packet was too large for the MRRU "
-                        "configured. rohc_packet buffer contains the first "
-                        "ROHC segment. but we didnt support retrieving"
-                        "ROHC segments.\n");
-        return -1;
-    }
-    else if( status==ROHC_STATUS_OK )
+    if( status==ROHC_STATUS_OK )
 	{
         return rohc_packet.len; 
     }

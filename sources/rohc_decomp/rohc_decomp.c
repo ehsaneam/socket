@@ -480,11 +480,6 @@ struct rohc_decomp * rohc_decomp_new2(const rohc_cid_type_t cid_type,
 	}
 	decomp->last_context = NULL;
 
-	/* no Reconstructed Reception Unit (RRU) at the moment */
-	decomp->rru_len = 0;
-	/* no segmentation by default */
-	decomp->mrru = 0;
-
 	/* init the tables for fast CRC computation */
 	rohc_crc_init_table(decomp->crc_table_3, ROHC_CRC_TYPE_3);
 	rohc_crc_init_table(decomp->crc_table_7, ROHC_CRC_TYPE_7);
@@ -689,7 +684,6 @@ rohc_status_t rohc_decompress3(struct rohc_decomp *const decomp,
 	/* decode ROHC header */
 	status = d_decode_header(decomp, rohc_packet, uncomp_packet, rcvd_feedback,
 	                         &stream);
-	assert(status != ROHC_STATUS_SEGMENT);
 
 	/* handle mode transitions if context was found and it is still valid */
 	if(stream.context != NULL)
@@ -800,7 +794,6 @@ rohc_status_t rohc_decompress3(struct rohc_decomp *const decomp,
 				decomp->stats.failed_crc++;
 				break;
 			case ROHC_STATUS_OK: /* success codes shall not happen */
-			case ROHC_STATUS_SEGMENT:
 			default:
 				assert(0);
 				status = ROHC_STATUS_ERROR;
@@ -902,92 +895,6 @@ static rohc_status_t d_decode_header(struct rohc_decomp *decomp,
 		rohc_debug(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
 		           "feedback-only packet, stop decompression");
 		goto skip;
-	}
-
-	/* ROHC segment? */
-	if(rohc_decomp_packet_is_segment(walk))
-	{
-		const bool is_final = !!GET_REAL(GET_BIT_0(walk));
-		uint32_t crc_computed;
-
-		/* skip the segment type byte */
-		walk++;
-		remain_len--;
-		rohc_buf_pull(&remain_rohc_data, 1);
-
-		rohc_debug(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-		           "ROHC packet is a %zu-byte %s segment", remain_len,
-		           is_final ? "final" : "non-final");
-
-		/* store all the remaining ROHC data in RRU */
-		if((decomp->rru_len + remain_len) > decomp->mrru)
-		{
-			rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-			             "invalid RRU: received segment is too large for MRRU "
-			             "(%zu bytes already received, %zu bytes received, "
-			             "MRRU = %zu bytes", decomp->rru_len, remain_len,
-			             decomp->mrru);
-			/* dicard RRU */
-			decomp->rru_len = 0;
-			goto error_malformed;
-		}
-		rohc_debug(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-		           "append new segment to the %zd bytes we already received",
-		           decomp->rru_len);
-		memcpy(decomp->rru + decomp->rru_len, walk, remain_len);
-		decomp->rru_len += remain_len;
-
-		/* stop decoding here is not final segment */
-		if(!is_final)
-		{
-			rohc_debug(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-			           "%zd bytes of RRU already received, wait for more "
-			           "segments before decompressing RRU", decomp->rru_len);
-			goto skip;
-		}
-
-		/* final segment received, let's check CRC */
-		if(decomp->rru_len <= 4)
-		{
-			rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-			             "invalid %zd-byte RRU: should be more than 4-byte long",
-			             decomp->rru_len);
-			/* discard RRU */
-			decomp->rru_len = 0;
-			goto error_malformed;
-		}
-		decomp->rru_len -= 4;
-		rohc_debug(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-		           "final segment received, check the 4-byte CRC of the "
-		           "%zd-byte RRU", decomp->rru_len);
-		crc_computed = crc_calc_fcs32(decomp->rru, decomp->rru_len,
-		                              CRC_INIT_FCS32);
-		if(memcmp(&crc_computed, decomp->rru + decomp->rru_len, 4) != 0)
-		{
-			uint32_t crc_packet;
-			memcpy(&crc_packet, decomp->rru + decomp->rru_len, 4);
-			rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-			             "invalid %zd-byte RRU: bad CRC (packet = 0x%08x, "
-			             "computed = 0x%08x)", decomp->rru_len,
-			             rohc_ntoh32(crc_packet), rohc_ntoh32(crc_computed));
-			/* discard RRU */
-			decomp->rru_len = 0;
-			goto error_crc;
-		}
-
-		/* CRC of segment is OK, let's decode RRU */
-		rohc_debug(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-		           "final segment received, decode the %zd-byte RRU",
-		           decomp->rru_len);
-		walk = decomp->rru;
-		remain_len = decomp->rru_len;
-		remain_rohc_data.offset = 0;
-		remain_rohc_data.data = decomp->rru;
-		remain_rohc_data.len = decomp->rru_len;
-		remain_rohc_data.max_len = decomp->rru_len;
-
-		/* reset context for next RRU */
-		decomp->rru_len = 0;
 	}
 
 	/* decode small or large CID */
@@ -1148,11 +1055,6 @@ error:
 	stream->crc_failed = !!(status == ROHC_STATUS_BAD_CRC);
 	decomp->last_context = NULL;
 	return status;
-
-error_crc:
-	stream->crc_failed = true;
-	decomp->last_context = NULL;
-	return ROHC_STATUS_BAD_CRC;
 
 error_malformed:
 	decomp->last_context = NULL;
@@ -2041,203 +1943,6 @@ bool rohc_decomp_get_max_cid(const struct rohc_decomp *const decomp,
 	}
 
 	*max_cid = decomp->medium.max_cid;
-	return true;
-
-error:
-	return false;
-}
-
-
-/**
- * @brief Set the Maximum Reconstructed Reception Unit (MRRU).
- *
- * Set the Maximum Reconstructed Reception Unit (MRRU).
- *
- * The MRRU is the largest cumulative length (in bytes) of the ROHC segments
- * that are parts of the same ROHC packet. In short, the ROHC decompressor
- * does not expect to reassemble ROHC segments whose total length is larger
- * than MRRU. So, the ROHC compressor shall not segment ROHC packets greater
- * than the MRRU.
- *
- * The MRRU value must be in range [0 ; \ref ROHC_MAX_MRRU]. Remember that the
- * MRRU includes the 32-bit CRC that protects it.
- * If set to 0, segmentation is disabled as no segment headers are allowed
- * on the channel. Every received segment will be dropped.
- *
- * If segmentation is enabled and used by the compressor, the function
- * \ref rohc_decompress3 will return ROHC_OK and one empty uncompressed packet
- * upon decompression until the last segment is received (or a non-segment is
- * received). Decompressed data will be returned at that time.
- *
- * @warning Changing the MRRU value while library is used may lead to
- *          destruction of the current RRU.
- *
- * @param decomp  The ROHC decompressor
- * @param mrru    The new MRRU value (in bytes)
- * @return        true if the MRRU was successfully set, false otherwise
- *
- * @ingroup rohc_decomp
- *
- * \par Example:
- * \snippet test_segment.c define ROHC decompressor
- * \code
-        size_t mrru = 500;
-        ...
-\endcode
- * \snippet test_segment.c create ROHC decompressor
- * \code
-        ...
-\endcode
- * \snippet test_segment.c set decompressor MRRU
- * \code
-        ...
-\endcode
- *
- * @see rohc_decomp_get_mrru
- * @see rohc_decompress3
- * @see rohc_comp_set_mrru
- * @see rohc_comp_get_mrru
- */
-bool rohc_decomp_set_mrru(struct rohc_decomp *const decomp,
-                          const size_t mrru)
-{
-	/* decompressor must be valid */
-	if(decomp == NULL)
-	{
-		/* cannot print a trace without a valid decompressor */
-		goto error;
-	}
-
-	/* new MRRU value must be in range [0, ROHC_MAX_MRRU] */
-	if(mrru > ROHC_MAX_MRRU)
-	{
-		rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-		             "unexpected MRRU value: must be in range [0, %d]",
-		             ROHC_MAX_MRRU);
-		goto error;
-	}
-
-	/* set new MRRU */
-	decomp->mrru = mrru;
-	rohc_debug(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-	           "MRRU is now set to %zd", decomp->mrru);
-
-	return true;
-
-error:
-	return false;
-}
-
-
-/**
- * @brief Get the Maximum Reconstructed Reception Unit (MRRU).
- *
- * Get the current Maximum Reconstructed Reception Unit (MRRU).
- *
- * The MRRU is the largest cumulative length (in bytes) of the ROHC segments
- * that are parts of the same ROHC packet. In short, the ROHC decompressor
- * does not expect to reassemble ROHC segments whose total length is larger
- * than MRRU. So, the ROHC compressor shall not segment ROHC packets greater
- * than the MRRU.
- *
- * The MRRU value must be in range [0 ; \ref ROHC_MAX_MRRU]. Remember that the
- * MRRU includes the 32-bit CRC that protects it.
- * If MRRU value is 0, segmentation is disabled.
- *
- * If segmentation is enabled and used by the compressor, the function
- * \ref rohc_decompress3 will return ROHC_OK and one empty uncompressed packet
- * upon decompression until the last segment is received (or a non-segment is
- * received). Decompressed data will be returned at that time.
- *
- * @param decomp     The ROHC decompressor
- * @param[out] mrru  The current MRRU value (in bytes)
- * @return           true if MRRU was successfully retrieved, false otherwise
- *
- * @ingroup rohc_decomp
- *
- * @see rohc_decomp_set_mrru
- * @see rohc_decompress3
- * @see rohc_comp_set_mrru
- * @see rohc_comp_get_mrru
- */
-bool rohc_decomp_get_mrru(const struct rohc_decomp *const decomp,
-                          size_t *const mrru)
-{
-	if(decomp == NULL || mrru == NULL)
-	{
-		goto error;
-	}
-
-	*mrru = decomp->mrru;
-	return true;
-
-error:
-	return false;
-}
-
-
-/**
- * @brief Set the number of packets sent during one Round-Trip Time (RTT).
- *
- * Set the maximum number of packets sent in worst case by the remote ROHC
- * compressor for one given stream (ie. one compression/decompression context)
- * during one Round-Trip Time (RTT).
- *
- * The number of packets sent by the remote ROHC compressor is used to estimate
- * how many SN bits those feedbacks shall transmit to avoid any ambiguity at
- * compressor about the ROHC packet that is (n)acknowledged by the decompressor.
- *
- * The pRTT value must be in range [0 ; SIZE_MAX/2[. If set to 0, all SN bits
- * are always transmitted.
- *
- * The default value is 50 packets / RTT, ie. a RTT of 1 second with one packet
- * transmitted every 20 milliseconds (classic VoIP stream). If your network
- * streams and conditions differ, change the default value.
- *
- * @param decomp  The ROHC decompressor
- * @param prtt    The number of packets sent during one RTT
- * @return        true if the new value was successfully set, false otherwise
- *
- * @ingroup rohc_decomp
- *
- * \par Example:
- * \snippet test_feedback2.c define ROHC decompressor
- * \code
-        rohc_cid_type_t cid_type = ROHC_SMALL_CID;
-        rohc_cid_t max_cid = ROHC_SMALL_CID_MAX;
-        ...
-\endcode
- * \snippet test_feedback2.c create ROHC decompressor
- * \code
-        ...
-\endcode
- * \snippet test_feedback2.c set decompressor pRTT
- * \code
-        ...
-\endcode
- *
- * @see rohc_decomp_get_prtt
- * @see rohc_decompress3
- */
-bool rohc_decomp_set_prtt(struct rohc_decomp *const decomp,
-                          const size_t prtt)
-{
-	/* decompressor must be valid */
-	if(decomp == NULL)
-	{
-		/* cannot print a trace without a valid decompressor */
-		goto error;
-	}
-
-	/* new pRTT must be in range [0, SIZE_MAX] */
-	if(prtt >= (SIZE_MAX / 2))
-	{
-		rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-		             "unexpected pRTT value: must be in range [0, %zu]",
-		             SIZE_MAX);
-		goto error;
-	}
-
 	return true;
 
 error:

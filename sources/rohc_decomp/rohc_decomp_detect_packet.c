@@ -28,28 +28,11 @@
 #include "rohc_bit_ops.h"
 #include "rohc_internal.h"
 
-
-/** The magic bits to find out whether a field is a segment field or not */
-#define D_SEGMENT        (0xfe >> 1)
-
 /** The magic bits to find out whether a ROHC packet is an IR packet or not */
 #define D_IR_PACKET      (0xfc >> 1)
 
 /** The magic byte to find out whether a ROHC packet is an IR-DYN packet */
 #define D_IR_DYN_PACKET  0xf8
-
-
-/**
- * @brief Find out whether the field is a segment field or not
- *
- * @param data The field to analyze
- * @return     Whether the field is a segment field or not
- */
-bool rohc_decomp_packet_is_segment(const uint8_t *const data)
-{
-	return (GET_BIT_1_7(data) == D_SEGMENT);
-}
-
 
 /**
  * @brief Find out whether the field is a padding field or not

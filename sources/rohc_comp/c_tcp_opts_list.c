@@ -126,14 +126,6 @@ static int c_tcp_build_eol_list_item(const struct rohc_comp_ctxt *const context,
                                      const size_t comp_opt_max_len)
 	__attribute__((warn_unused_result, nonnull(1, 2, 3, 5)));
 
-static int c_tcp_build_mss_list_item(const struct rohc_comp_ctxt *const context,
-                                     const struct tcphdr *const tcp,
-                                     const uint8_t *const uncomp_opt,
-                                     const uint8_t uncomp_opt_len,
-                                     uint8_t *const comp_opt,
-                                     const size_t comp_opt_max_len)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 5)));
-
 static int c_tcp_build_ws_list_item(const struct rohc_comp_ctxt *const context,
                                     const struct tcphdr *const tcp,
                                     const uint8_t *const uncomp_opt,
@@ -184,9 +176,6 @@ static struct c_tcp_opt c_tcp_opts[MAX_TCP_OPTION_INDEX + 1] =
 	[TCP_INDEX_EOL]       = { TCP_INDEX_EOL, true, TCP_OPT_EOL,
 	                          "End of Option List (EOL)",
 	                          c_tcp_build_eol_list_item },
-	[TCP_INDEX_MSS]       = { TCP_INDEX_MSS, true, TCP_OPT_MSS,
-	                          "Maximum Segment Size (MSS)",
-	                          c_tcp_build_mss_list_item },
 	[TCP_INDEX_WS]        = { TCP_INDEX_WS, true, TCP_OPT_WS,
 	                          "Window Scale (WS)",
 	                          c_tcp_build_ws_list_item },
@@ -368,18 +357,6 @@ bool rohc_comp_tcp_are_options_acceptable(const struct rohc_comp *const comp,
 				}
 				break;
 			}
-			case TCP_OPT_MSS:
-			{
-				if(opt_len != TCP_OLEN_MSS)
-				{
-					rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-					           "malformed TCP option #%zu: unexpected length for MSS "
-					           "option: %u found in packet while %u expected",
-					           opt_pos + 1, opt_len, TCP_OLEN_MSS);
-					goto bad_opts;
-				}
-				break;
-			}
 			case TCP_OPT_WS:
 			{
 				if(opt_len != TCP_OLEN_WS)
@@ -536,7 +513,7 @@ bool tcp_detect_options_changes(struct rohc_comp_ctxt *const context,
 		 * transmitted in irregular chain if their value changed, so the compressor
 		 * needs to detect such changes and to select a packet type that can
 		 * transmit their changes, ie. IR, IR-DYN, co_common, rnd_8 or seq_8 */
-		if(opt_type == TCP_OPT_EOL || opt_type == TCP_OPT_MSS || opt_type == TCP_OPT_WS)
+		if(opt_type == TCP_OPT_EOL || opt_type == TCP_OPT_WS)
 		{
 			if(opts_ctxt->list[opt_idx].used &&
 			   c_tcp_opt_changed(opts_ctxt, opt_idx, opts + opts_offset, opt_len))
@@ -999,7 +976,6 @@ int c_tcp_code_tcp_opts_irreg(const struct rohc_comp_ctxt *const context,
 		}
 		else if(opt_type != TCP_OPT_EOL &&
 		        opt_type != TCP_OPT_NOP &&
-		        opt_type != TCP_OPT_MSS &&
 		        opt_type != TCP_OPT_WS &&
 		        opt_type != TCP_OPT_SACK_PERM)
 		{
@@ -1197,14 +1173,6 @@ static void c_tcp_opt_trace(const struct rohc_comp_ctxt *const context,
 				(struct tcp_option_timestamp *) (opt_data + 2);
 			rohc_comp_debug(context, "TCP option %s = 0x%04x 0x%04x", opt_descr,
 			                rohc_ntoh32(opt_ts->ts), rohc_ntoh32(opt_ts->ts_reply));
-			break;
-		}
-		case TCP_OPT_MSS:
-		{
-			uint16_t mss_val;
-			memcpy(&mss_val, opt_data + 2, 2);
-			rohc_comp_debug(context, "TCP option %s = %u (0x%04x)", opt_descr,
-			                rohc_ntoh16(mss_val), rohc_ntoh16(mss_val));
 			break;
 		}
 		case TCP_OPT_WS:
@@ -1597,52 +1565,6 @@ static int c_tcp_build_eol_list_item(const struct rohc_comp_ctxt *const context,
 error:
 	return -1;
 }
-
-
-/**
- * @brief Build the list item for the TCP MSS option
- *
- * \verbatim
-
-   mss =:= irregular(16) [ 16 ];
-
-\endverbatim
- *
- * @param context           The compression context
- * @param tcp               The TCP header
- * @param uncomp_opt        The uncompressed TCP option to compress
- * @param uncomp_opt_len    The length of the uncompressed TCP option to compress
- * @param[out] comp_opt     The compressed TCP option
- * @param comp_opt_max_len  The max remaining length in the ROHC buffer
- * @return                  The length (in bytes) of compressed TCP option
- *                          in case of success, -1 in case of failure
- */
-static int c_tcp_build_mss_list_item(const struct rohc_comp_ctxt *const context,
-                                     const struct tcphdr *const tcp __attribute__((unused)),
-                                     const uint8_t *const uncomp_opt,
-                                     const uint8_t uncomp_opt_len __attribute__((unused)),
-                                     uint8_t *const comp_opt,
-                                     const size_t comp_opt_max_len)
-{
-	const size_t comp_opt_len = sizeof(uint16_t);
-
-	/* is the ROHC buffer large enough to contain the list item? */
-	if(comp_opt_max_len < comp_opt_len)
-	{
-		rohc_comp_warn(context, "ROHC buffer too small for the TCP option MSS item: "
-		               "%zu bytes required, but only %zu bytes available",
-		               comp_opt_len, comp_opt_max_len);
-		goto error;
-	}
-
-	memcpy(comp_opt, uncomp_opt + 2, sizeof(uint16_t));
-
-	return comp_opt_len;
-
-error:
-	return -1;
-}
-
 
 /**
  * @brief Build the list item for the TCP WS option

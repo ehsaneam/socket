@@ -122,18 +122,6 @@ struct rohc_decomp
 	/** The last decompression context used by the decompressor */
 	struct rohc_decomp_ctxt *last_context;
 
-	/* segment-related variables */
-
-/** The maximal value for MRRU */
-#define ROHC_MAX_MRRU 65535
-	/** The Reconstructed Reception Unit */
-	uint8_t rru[ROHC_MAX_MRRU];
-	/** The length (in bytes) of the Reconstructed Reception Unit */
-	size_t rru_len;
-	/** The Maximum Reconstructed Reception Unit (MRRU) */
-	size_t mrru;
-
-
 	/* CRC-related variables: */
 
 	/** The table to enable fast CRC-3 computation */
