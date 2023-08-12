@@ -108,12 +108,7 @@ typedef enum
  */
 typedef enum
 {
-	ROHC_EXT_0       = 0,  /**< The EXT-0 extension for UO-1-ID/UOR-2* packets */
-	ROHC_EXT_1       = 1,  /**< The EXT-1 extension for UO-1-ID/UOR-2* packets */
-	ROHC_EXT_2       = 2,  /**< The EXT-2 extension for UO-1-ID/UOR-2* packets */
-	ROHC_EXT_3       = 3,  /**< The EXT-3 extension for UO-1-ID/UOR-2* packets */
 	ROHC_EXT_NONE    = 4,  /**< No extension for UO-1-ID/UOR-2* packets */
-	ROHC_EXT_UNKNOWN = 5,  /**< Unknown packet extension type */
 } rohc_ext_t;
 
 
@@ -122,9 +117,6 @@ typedef enum
  */
 
 const char * ROHC_EXPORT rohc_get_packet_descr(const rohc_packet_t packet_type)
-	__attribute__((warn_unused_result, const));
-
-const char * ROHC_EXPORT rohc_get_ext_descr(const rohc_ext_t ext_type)
 	__attribute__((warn_unused_result, const));
 
 rohc_packet_t ROHC_EXPORT rohc_get_packet_type(const char *const packet_id)

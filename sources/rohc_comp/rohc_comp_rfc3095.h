@@ -210,8 +210,6 @@ struct rohc_comp_rfc3095_ctxt
 	rohc_packet_t (*decide_FO_packet)(const struct rohc_comp_ctxt *context);
 	/** @brief The handler used to decide which packet to send in SO state */
 	rohc_packet_t (*decide_SO_packet)(const struct rohc_comp_ctxt *context);
-	/** The handler used to decide which extension to send */
-	rohc_ext_t (*decide_extension)(const struct rohc_comp_ctxt *context);
 
 	/// The handler used to initialize some data just before the IR packet build
 	void (*init_at_IR)(struct rohc_comp_ctxt *const context,
@@ -302,9 +300,6 @@ void rohc_comp_rfc3095_destroy(struct rohc_comp_ctxt *const context)
 bool rohc_comp_rfc3095_check_profile(const struct rohc_comp *const comp,
                                      const struct net_pkt *const packet)
 	__attribute__((warn_unused_result, nonnull(1, 2)));
-
-rohc_ext_t decide_extension(const struct rohc_comp_ctxt *const context)
-	__attribute__((warn_unused_result, nonnull(1)));
 
 int rohc_comp_rfc3095_encode(struct rohc_comp_ctxt *const context,
                              const struct net_pkt *const uncomp_pkt,

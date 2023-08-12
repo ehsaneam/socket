@@ -111,43 +111,6 @@ const char * rohc_get_packet_descr(const rohc_packet_t packet_type)
 	}
 }
 
-
-/**
- * @brief Give a description for the given type of ROHC extension
- *
- * Give a description for the given type of ROHC extension.
- *
- * The descriptions are not part of the API. They may change between
- * releases without any warning. Do NOT use them for other means that
- * providing to users a textual description of the extensions used by
- * the library. If unsure, ask on the mailing list.
- *
- * @param ext_type  The type of extension to get a description for
- * @return          A string that describes the given extension type
- *
- * @ingroup rohc
- */
-const char * rohc_get_ext_descr(const rohc_ext_t ext_type)
-{
-	switch(ext_type)
-	{
-		case ROHC_EXT_0:
-			return "EXT-0";
-		case ROHC_EXT_1:
-			return "EXT-1";
-		case ROHC_EXT_2:
-			return "EXT-2";
-		case ROHC_EXT_3:
-			return "EXT-3";
-		case ROHC_EXT_NONE:
-			return "none";
-		case ROHC_EXT_UNKNOWN:
-		default:
-			return "unknown ROHC extension";
-	}
-}
-
-
 /**
  * @brief Get the packet type from a packet identifier
  *

@@ -304,26 +304,6 @@ struct rohc_decomp_rfc3095_ctxt
 	                          const size_t length,
 	                          struct rohc_extr_bits *const bits);
 
-	/**
-	 * @brief The handler used to parse the extension 3 of the UO* ROHC packet
-	 *
-	 * @param context           The decompression context
-	 * @param rohc_data         The ROHC data to parse
-	 * @param rohc_data_len     The length of the ROHC data to parse
-	 * @param packet_type       The type of ROHC packet to parse
-	 * @param bits              IN: the bits already found in base header
-	 *                          OUT: the bits found in the extension header 3
-	 * @return                  The data length read from the ROHC packet,
-	 *                          -2 in case packet must be reparsed,
-	 *                          -1 in case of error
-	 */
-	int (*parse_ext3)(const struct rohc_decomp_ctxt *const context,
-	                  const uint8_t *const rohc_data,
-	                  const size_t rohc_data_len,
-	                  const rohc_packet_t packet_type,
-	                  struct rohc_extr_bits *const bits)
-		__attribute__((warn_unused_result, nonnull(1, 2, 5)));
-
 	/// The handler used to parse the tail of the UO* ROHC packet
 	int (*parse_uo_remainder)(const struct rohc_decomp_ctxt *const context,
 	                          const uint8_t *packet,

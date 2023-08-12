@@ -4,3 +4,5 @@ build_server/
 build_client/
 
 .vscode/
+
+tester.sh

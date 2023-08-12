@@ -50,14 +50,10 @@ enum
 {
 	/** The IP protocol number for Hop-by-Hop option */
 	ROHC_IPPROTO_HOPOPTS   = 0,
-	/** The IP protocol number for IPv4-in-IPv4 tunnels */
-	ROHC_IPPROTO_IPIP      = 4,
 	/** The IP protocol number for Transmission Control Protocol (TCP) */
 	ROHC_IPPROTO_TCP       = 6,
 	/** The IP protocol number for the User Datagram Protocol (UDP) */
 	ROHC_IPPROTO_UDP       = 17,
-	/** The IP protocol number for Generic Routing Encapsulation (GRE) */
-	ROHC_IPPROTO_GRE       = 47,
 	/** The IP protocol number for Authentication Header */
 	ROHC_IPPROTO_AH        = 51,
 	/** The IP protocol number for Minimal Encapsulation within IP (RFC 2004) */

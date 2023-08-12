@@ -78,7 +78,6 @@ static bool rohc_ip_ctxt_create(struct rohc_comp_ctxt *const context,
 	/* init the IP-only-specific variables and functions */
 	rfc3095_ctxt->decide_FO_packet = c_ip_decide_FO_packet;
 	rfc3095_ctxt->decide_SO_packet = c_ip_decide_SO_packet;
-	rfc3095_ctxt->decide_extension = decide_extension;
 	rfc3095_ctxt->get_next_sn = c_ip_get_next_sn;
 	rfc3095_ctxt->code_ir_remainder = c_ip_code_ir_remainder;
 

@@ -157,63 +157,6 @@ const uint8_t * ip_get_raw_data(const struct ip_packet *const ip)
 	return ip->data;
 }
 
-
-/**
- * @brief Get the inner IP packet (IP in IP)
- *
- * The function does not handle \ref ip_packet whose \ref ip_packet::version
- * is \ref IP_UNKNOWN.
- *
- * @param outer The outer IP packet to analyze
- * @param inner The inner IP packet to create
- */
-void ip_get_inner_packet(const struct ip_packet *const outer,
-                         struct ip_packet *const inner)
-{
-	/* create an IP packet with the next header data */
-	ip_create(inner, outer->nl.data, outer->nl.len);
-}
-
-
-/**
- * @brief Get the IP next header
- *
- * The function does not handle \ref ip_packet whose \ref ip_packet::version
- * is \ref IP_UNKNOWN.
- *
- * @param ip   The IP packet to analyze
- * @param type OUT: The type of the next header
- * @return     The next header if successful, NULL otherwise
- */
-uint8_t * ip_get_next_header(const struct ip_packet *const ip,
-                             uint8_t *const type)
-{
-	/* function does not handle non-IPv4/IPv6 packets */
-	assert(ip->version != IP_UNKNOWN);
-
-	*type = ip->nh.proto;
-	return ip->nh.data;
-}
-
-
-/**
- * @brief Get the next header (but skip IP extensions)
- *
- * The function does not handle \ref ip_packet whose \ref ip_packet::version
- * is \ref IP_UNKNOWN.
- *
- * @param ip   The IP packet to analyze
- * @return     The next header that is not an IP extension if there is one,
- *             NULL if there is none
- */
-uint8_t * ip_get_next_layer(const struct ip_packet *const ip)
-{
-	/* function does not handle non-IPv4/IPv6 packets */
-	assert(ip->version == IPV4);
-
-	return ip->nl.data;
-}
-
 /**
  * @brief Whether the IP packet is an IP fragment or not
  *

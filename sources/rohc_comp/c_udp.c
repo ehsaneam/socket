@@ -165,7 +165,6 @@ static bool c_udp_create(struct rohc_comp_ctxt *const context,
 	rfc3095_ctxt->decide_state = udp_decide_state;
 	rfc3095_ctxt->decide_FO_packet = c_ip_decide_FO_packet;
 	rfc3095_ctxt->decide_SO_packet = c_ip_decide_SO_packet;
-	rfc3095_ctxt->decide_extension = decide_extension;
 	rfc3095_ctxt->init_at_IR = NULL;
 	rfc3095_ctxt->get_next_sn = c_ip_get_next_sn;
 	rfc3095_ctxt->code_static_part = udp_code_static_udp_part;

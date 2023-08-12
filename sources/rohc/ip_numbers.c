@@ -36,14 +36,10 @@ const char * rohc_get_ip_proto_descr(const uint8_t protocol)
 	{
 		case ROHC_IPPROTO_HOPOPTS:
 			return "Hop-by-Hop option";
-		case ROHC_IPPROTO_IPIP:
-			return "IPv4";
 		case ROHC_IPPROTO_TCP:
 			return "TCP";
 		case ROHC_IPPROTO_UDP:
 			return "UDP";
-		case ROHC_IPPROTO_GRE:
-			return "GRE";
 		case ROHC_IPPROTO_AH:
 			return "AH";
 		case ROHC_IPPROTO_MINE:

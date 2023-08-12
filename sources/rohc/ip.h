@@ -282,17 +282,9 @@ void ip_create(struct ip_packet *const ip,
                const uint8_t *const packet,
                const size_t size)
 	__attribute__((nonnull(1, 2)));
-void ip_get_inner_packet(const struct ip_packet *const outer,
-                         struct ip_packet *const inner)
-	__attribute__((nonnull(1, 2)));
 
 const uint8_t * ip_get_raw_data(const struct ip_packet *const ip)
 	__attribute__((warn_unused_result, nonnull(1), pure));
-uint8_t * ip_get_next_header(const struct ip_packet *const ip,
-                             uint8_t *const type)
-	__attribute__((warn_unused_result, nonnull(1, 2)));
-uint8_t * ip_get_next_layer(const struct ip_packet *const ip)
-	__attribute__((warn_unused_result, nonnull(1)));
 
 unsigned int ip_get_totlen(const struct ip_packet *const ip)
 	__attribute__((warn_unused_result, nonnull(1), pure));

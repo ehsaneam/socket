@@ -149,7 +149,6 @@ static bool d_udp_create(const struct rohc_decomp_ctxt *const context,
 	rfc3095_ctxt->next_header_len = sizeof(struct udphdr);
 	rfc3095_ctxt->parse_static_next_hdr = udp_parse_static_udp;
 	rfc3095_ctxt->parse_dyn_next_hdr = udp_parse_dynamic_udp;
-	rfc3095_ctxt->parse_ext3 = ip_parse_ext3;
 	rfc3095_ctxt->parse_uo_remainder = udp_parse_uo_remainder;
 	rfc3095_ctxt->decode_values_from_bits = udp_decode_values_from_bits;
 	rfc3095_ctxt->build_next_header = udp_build_uncomp_udp;
