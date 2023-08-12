@@ -73,13 +73,6 @@ static int parse_dynamic_part_ipv4(const struct rohc_decomp_ctxt *const context,
                                    const size_t length,
                                    struct rohc_extr_ip_bits *const bits)
 	__attribute__((warn_unused_result, nonnull(1, 2, 4)));
-static int parse_dynamic_part_ipv6(const struct rohc_decomp_ctxt *const context,
-                                   const uint8_t *packet,
-                                   const size_t length,
-                                   struct rohc_extr_ip_bits *const bits,
-                                   struct list_decomp *const list_decomp)
-	__attribute__((warn_unused_result, nonnull(1, 2, 4, 5)));
-
 
 /*
  * Private function prototypes for parsing the different UO* headers
@@ -892,16 +885,13 @@ static int parse_dynamic_part_ip(const struct rohc_decomp_ctxt *const context,
                                  struct rohc_extr_ip_bits *const bits,
                                  struct list_decomp *const list_decomp)
 {
+	assert(list_decomp->profile_id>=0);
 	int read; /* number of bytes read from the packet */
 
 	/* decode the dynamic part of the IP header depending on the IP version */
 	if(bits->version == IPV4)
 	{
 		read = parse_dynamic_part_ipv4(context, packet, length, bits);
-	}
-	else /* IPV6 */
-	{
-		read = parse_dynamic_part_ipv6(context, packet, length, bits, list_decomp);
 	}
 
 	return read;
@@ -1023,71 +1013,6 @@ static int parse_dynamic_part_ipv4(const struct rohc_decomp_ctxt *const context,
 error:
 	return -1;
 }
-
-
-/**
- * @brief Decode the IPv6 dynamic part of a ROHC packet.
- *
- * See 5.7.7.3 in RFC 3095 for details. Generic extension header list is not
- * managed yet.
- *
- * @param context      The decompression context
- * @param packet       The ROHC packet to decode
- * @param length       The length of the ROHC packet
- * @param bits         OUT: The bits extracted from the IP dynamic part
- * @param list_decomp  The list decompressor
- * @return             The number of bytes read in the ROHC packet,
- *                     -1 in case of failure
- */
-static int parse_dynamic_part_ipv6(const struct rohc_decomp_ctxt *const context,
-                                   const uint8_t *packet,
-                                   const size_t length,
-                                   struct rohc_extr_ip_bits *const bits,
-                                   struct list_decomp *const list_decomp)
-{
-	int read = 0; /* number of bytes read from the packet */
-	int size_ext; /* length (in bytes) of the generic extension header list */
-
-	/* check the minimal length to decode the IPv6 dynamic part */
-	if(length < 2)
-	{
-		rohc_decomp_warn(context, "ROHC packet too small (len = %zu)", length);
-		goto error;
-	}
-
-	/* read the TC field */
-	bits->tos = GET_BIT_0_7(packet);
-	bits->tos_nr = 8;
-	rohc_decomp_debug(context, "TC = 0x%02x", bits->tos);
-	packet++;
-	read++;
-
-	/* read the HL field */
-	bits->ttl = GET_BIT_0_7(packet);
-	bits->ttl_nr = 8;
-	rohc_decomp_debug(context, "HL = 0x%02x", bits->ttl);
-	packet++;
-	read++;
-
-	/* decode generic extension header list if present */
-	size_ext = rohc_list_decode_maybe(list_decomp, packet, length - read);
-	if(size_ext < 0)
-	{
-		rohc_decomp_warn(context, "failed to decode IPv6 extensions list");
-		goto error;
-	}
-	rohc_decomp_debug(context, "IPv6 extensions list = %d bytes", size_ext);
-#ifndef __clang_analyzer__ /* silent warning about dead increment */
-	packet += size_ext;
-#endif
-	read += size_ext;
-
-	return read;
-
-error:
-	return -1;
-}
-
 
 /**
  * @brief Get the reference SN value of the context.

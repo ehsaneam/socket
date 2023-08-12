@@ -42,12 +42,6 @@ static int tcp_parse_dynamic_ip(const struct rohc_decomp_ctxt *const context,
                                 struct rohc_tcp_extr_ip_bits *const ip_bits)
 	__attribute__((warn_unused_result, nonnull(1, 2, 4)));
 
-static int tcp_parse_dynamic_ipv6_option(const struct rohc_decomp_ctxt *const context,
-                                         ip_option_context_t *const opt_context,
-                                         const uint8_t *const rohc_packet,
-                                         const size_t rohc_length)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3)));
-
 static int tcp_parse_dynamic_tcp(const struct rohc_decomp_ctxt *const context,
                                  const uint8_t *const rohc_packet,
                                  const size_t rohc_length,
@@ -144,7 +138,6 @@ static int tcp_parse_dynamic_ip(const struct rohc_decomp_ctxt *const context,
 	const uint8_t *remain_data = rohc_packet;
 	size_t remain_len = rohc_length;
 	size_t size = 0;
-	int ret;
 
 	rohc_decomp_debug(context, "parse IP dynamic part");
 
@@ -206,57 +199,7 @@ static int tcp_parse_dynamic_ip(const struct rohc_decomp_ctxt *const context,
 #endif
 		}
 	}
-	else
-	{
-		const ipv6_dynamic_t *const ipv6_dynamic =
-			(ipv6_dynamic_t *) remain_data;
-		size_t opts_nr;
-
-		if(remain_len < sizeof(ipv6_dynamic_t))
-		{
-			rohc_decomp_warn(context, "malformed ROHC packet: too short for "
-			                 "IPv6 dynamic part");
-			goto error;
-		}
-
-		ip_bits->dscp_bits = ipv6_dynamic->dscp;
-		ip_bits->dscp_bits_nr = 6;
-		ip_bits->ecn_flags_bits = ipv6_dynamic->ip_ecn_flags;
-		ip_bits->ecn_flags_bits_nr = 2;
-		ip_bits->ttl_hl.bits = ipv6_dynamic->ttl_hopl;
-		ip_bits->ttl_hl.bits_nr = 8;
-		ip_bits->id_behavior = IP_ID_BEHAVIOR_RAND;
-		ip_bits->id_behavior_nr = 2;
-
-		size += sizeof(ipv6_dynamic_t);
-		remain_data += sizeof(ipv6_dynamic_t);
-		remain_len -= sizeof(ipv6_dynamic_t);
-
-		rohc_decomp_debug(context, "parse the dynamic parts of the %zu IPv6 "
-		                  "extension headers", ip_bits->opts_nr);
-
-		assert(ip_bits->proto_nr == 8);
-		for(opts_nr = 0; opts_nr < ip_bits->opts_nr; opts_nr++)
-		{
-			ip_option_context_t *const opt = &(ip_bits->opts[opts_nr]);
-
-			ret = tcp_parse_dynamic_ipv6_option(context, opt, remain_data, remain_len);
-			if(ret < 0)
-			{
-				rohc_decomp_warn(context, "malformed ROHC packet: malformed "
-				                 "IPv6 dynamic option part");
-				goto error;
-			}
-			rohc_decomp_debug(context, "IPv6 dynamic option part is %d-byte "
-			                  "length", ret);
-			assert(remain_len >= ((size_t) ret));
-			size += ret;
-			remain_data += ret;
-			remain_len -= ret;
-
-		}
-	}
-
+	
 	rohc_decomp_dump_buf(context, "IP dynamic part", rohc_packet, size);
 
 	return size;
@@ -264,64 +207,6 @@ static int tcp_parse_dynamic_ip(const struct rohc_decomp_ctxt *const context,
 error:
 	return -1;
 }
-
-
-/**
- * @brief Decode the dynamic IPv6 option header of the rohc packet.
- *
- * @param context        The decompression context
- * @param opt_context    The specific IPv6 option decompression context
- * @param rohc_packet    The remaining part of the ROHC packet
- * @param rohc_length    The remaining length (in bytes) of the ROHC packet
- * @return               The length of dynamic IP header
- *                       -1 if an error occurs
- */
-static int tcp_parse_dynamic_ipv6_option(const struct rohc_decomp_ctxt *const context,
-                                         ip_option_context_t *const opt_context,
-                                         const uint8_t *const rohc_packet,
-                                         const size_t rohc_length)
-{
-	size_t remain_len = rohc_length;
-	remain_len = 0;
-	size_t size;
-	size = remain_len;
-
-	rohc_decomp_debug(context, "parse dynamic part of the %zu-byte IPv6 extension "
-	                  "header '%s' (%u)", opt_context->len,
-	                  rohc_get_ip_proto_descr(opt_context->proto), opt_context->proto);
-
-	switch(opt_context->proto)
-	{
-		case ROHC_IPPROTO_GRE:  /* TODO: GRE not yet supported */
-		{
-			rohc_decomp_warn(context, "GRE extension header not supported yet");
-			goto error;
-		}
-		case ROHC_IPPROTO_MINE:  /* TODO: MINE not yet supported */
-		{
-			rohc_decomp_warn(context, "MINE extension header not supported yet");
-			goto error;
-		}
-		case ROHC_IPPROTO_AH:  /* TODO: AH not yet supported */
-		{
-			rohc_decomp_warn(context, "AH extension header not supported yet");
-			goto error;
-		}
-		default:
-		{
-			rohc_decomp_warn(context, "unknown extension header not supported yet");
-			goto error;
-		}
-	}
-
-	rohc_decomp_dump_buf(context, "IPv6 option dynamic part", rohc_packet, size);
-
-	return size;
-
-error:
-	return -1;
-}
-
 
 /**
  * @brief Decode the TCP dynamic part of the ROHC packet.

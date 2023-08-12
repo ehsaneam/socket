@@ -844,7 +844,6 @@ static bool c_tcp_check_context(const struct rohc_comp_ctxt *const context,
 	size_t ip_hdr_pos;
 	uint8_t next_proto = ROHC_IPPROTO_IPIP;
 	const struct tcphdr *tcp;
-	bool at_least_one_ipv6_hl_changed = false;
 
 	/* Context Replication is possible only if the chain of IP headers is
 	 * unchanged on some aspects:
@@ -953,12 +952,6 @@ static bool c_tcp_check_context(const struct rohc_comp_ctxt *const context,
 	return true;
 
 bad_context_check_cr:
-	/* Context Replication is not possible if the IPv6 HL changed in any
-	 * of the IP headers: indeed the IR-CR cannot transmit the changes */
-	if(at_least_one_ipv6_hl_changed)
-	{
-		(*cr_score) = 0;
-	}
 	/* Context Replication is not possible if TCP RSF flags are abnormal: indeed
 	 * the IR-CR packet encodes TCP RSF flags with the rsf_index_enc() method
 	 * that does not support combination of RST, SYN or FIN flags */
@@ -3092,10 +3085,6 @@ static bool tcp_detect_changes(struct rohc_comp_ctxt *const context,
 	bool last_pkt_outer_dscp_changed;
 	uint8_t pkt_ecn_vals;
 
-	/* no IPv6 extension got its static or dynamic parts changed at the beginning */
-	tcp_context->tmp.is_ipv6_exts_list_static_changed = false;
-	tcp_context->tmp.is_ipv6_exts_list_dyn_changed = false;
-
 	hdrs_len = 0;
 	pkt_outer_dscp_changed = 0;
 	last_pkt_outer_dscp_changed = false;
@@ -3910,7 +3899,6 @@ static rohc_packet_t tcp_decide_packet(struct rohc_comp_ctxt *const context,
                                        const ip_context_t *const ip_inner_context,
                                        const struct tcphdr *const tcp)
 {
-	struct sc_tcp_context *const tcp_context = context->specific;
 	rohc_packet_t packet_type;
 
 	switch(context->state)
@@ -3921,16 +3909,8 @@ static rohc_packet_t tcp_decide_packet(struct rohc_comp_ctxt *const context,
 			context->ir_count++;
 			break;
 		case ROHC_COMP_STATE_CR: /* The Context Replication (CR) state */
-			if(tcp_context->tmp.is_ipv6_exts_list_static_changed)
-			{
-				rohc_comp_debug(context, "code IR packet (IPv6 extension list changed)");
-				packet_type = ROHC_PACKET_IR;
-			}
-			else
-			{
-				rohc_comp_debug(context, "code IR-CR packet");
-				packet_type = ROHC_PACKET_IR_CR;
-			}
+			rohc_comp_debug(context, "code IR-CR packet");
+			packet_type = ROHC_PACKET_IR_CR;
 			context->cr_count++;
 			break;
 		case ROHC_COMP_STATE_FO: /* The First Order (FO) state */
@@ -4019,19 +3999,7 @@ static rohc_packet_t tcp_decide_FO_SO_packet(const struct rohc_comp_ctxt *const 
 	struct sc_tcp_context *const tcp_context = context->specific;
 	rohc_packet_t packet_type;
 
-	if(tcp_context->tmp.is_ipv6_exts_list_static_changed)
-	{
-		rohc_comp_debug(context, "force packet IR because at least one IPv6 option "
-		                "changed its static part");
-		packet_type = ROHC_PACKET_IR;
-	}
-	else if(tcp_context->tmp.is_ipv6_exts_list_dyn_changed)
-	{
-		rohc_comp_debug(context, "force packet IR-DYN because at least one IPv6 option "
-		                "changed its dynamic part");
-		packet_type = ROHC_PACKET_IR_DYN;
-	}
-	else if((tcp_context->tcp_opts.tmp.nr_opt_ts_req_bits_minus_1 > ROHC_SDVL_MAX_BITS_IN_2_BYTES &&
+	if((tcp_context->tcp_opts.tmp.nr_opt_ts_req_bits_minus_1 > ROHC_SDVL_MAX_BITS_IN_2_BYTES &&
 	         tcp_context->tcp_opts.tmp.nr_opt_ts_req_bits_0x40000 > ROHC_SDVL_MAX_BITS_IN_3_BYTES &&
 	         tcp_context->tcp_opts.tmp.nr_opt_ts_req_bits_0x4000000 > ROHC_SDVL_MAX_BITS_IN_4_BYTES) ||
 	        (tcp_context->tcp_opts.tmp.nr_opt_ts_reply_bits_minus_1 > ROHC_SDVL_MAX_BITS_IN_2_BYTES &&

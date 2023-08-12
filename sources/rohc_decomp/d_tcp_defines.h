@@ -38,61 +38,12 @@
 
 #include <stdint.h>
 
-/**
- * @brief Define the IPv6 option context for GRE option
- */
-typedef struct __attribute__((packed)) ipv6_gre_option_context
-{
-	uint8_t c_flag:1;
-	uint8_t k_flag:1;
-	uint8_t s_flag:1;
-	uint8_t protocol:1;
-	uint8_t padding:4;
-
-	uint32_t key;               // if k_flag set
-	uint32_t sequence_number;   // if s_flag set
-
-} ipv6_gre_option_context_t;
-
-
-/**
- * @brief Define the IPv6 option context for MIME option
- */
-typedef struct __attribute__((packed)) ipv6_mime_option_context
-{
-	uint8_t s_bit:1;
-	uint8_t res_bits:7;
-	uint32_t orig_dest;
-	uint32_t orig_src;         // if s_bit set
-
-} ipv6_mime_option_context_t;
-
-
-/**
- * @brief Define the IPv6 option context for AH option
- */
-typedef struct __attribute__((packed)) ipv6_ah_option_context
-{
-	uint32_t spi;
-	uint32_t sequence_number;
-	uint32_t auth_data[1];
-} ipv6_ah_option_context_t;
-
-
 /** The decompression context for one IP extension header */
 typedef struct
 {
 	size_t len;        /**< The length (in bytes) of the extension header */
 	uint8_t proto;     /**< The protocol of the extension header */
 	uint8_t nh_proto;  /**< The protocol of the next header */
-
-	union
-	{
-		ipv6_gre_option_context_t gre;         /**< IPv6 GRE extension header */
-		ipv6_mime_option_context_t mime;       /**< IPv6 MIME extension header */
-		ipv6_ah_option_context_t ah;           /**< IPv6 AH extension header */
-	};
-
 } ip_option_context_t;
 
 
@@ -140,32 +91,6 @@ typedef struct __attribute__((packed)) ipv4_context
 
 } ipv4_context_t;
 
-
-/**
- * @brief Define the IPv6 header context.
- */
-typedef struct __attribute__((packed)) ipv6_context
-{
-	uint8_t version:4;
-	uint8_t unused:4;
-
-	uint8_t dscp:6;
-	uint8_t ip_ecn_flags:2;
-
-	uint8_t next_header;
-
-	uint8_t ttl_hopl;
-
-	uint8_t ip_id_behavior;
-
-	uint32_t flow_label:20; /**< IPv6 Flow Label */
-
-	uint32_t src_addr[4];
-	uint32_t dest_addr[4];
-
-} ipv6_context_t;
-
-
 /**
  * @brief Define union of IP contexts
  */
@@ -176,7 +101,6 @@ typedef struct
 	{
 		ipvx_context_t vx;
 		ipv4_context_t v4;
-		ipv6_context_t v6;
 	} ctxt;
 
 	size_t opts_nr;
@@ -326,8 +250,6 @@ struct rohc_tcp_extr_ip_bits
 	                      of IR header or in extension header */
 	size_t proto_nr; /**< The number of protocol/next header bits */
 
-	uint32_t flowid:20;  /**< The IPv6 flow ID bits found in static chain of
-	                          IR header */
 	size_t flowid_nr;    /**< The number of flow label bits */
 
 	uint8_t saddr[16];   /**< The source address bits found in static chain of
@@ -414,7 +336,6 @@ struct rohc_tcp_decoded_ip_values
 	uint8_t nbo:1;       /**< The decoded NBO field (IPv4 only) */
 	uint8_t rnd:1;       /**< The decoded RND field (IPv4 only) */
 	uint8_t sid:1;       /**< The decoded SID field (IPv4 only) */
-	uint32_t flowid:20;  /**< The decoded flow ID field (IPv6 only) */
 	uint8_t saddr[16];   /**< The decoded source address field */
 	uint8_t daddr[16];   /**< The decoded destination address field */
 

@@ -596,11 +596,6 @@ int parse_inner_header_flags(const struct rohc_decomp_ctxt *const context,
 		bits->df_nr = 1;
 		rohc_decomp_debug(context, "DF = %d", bits->df);
 	}
-	else if(df) /* IPv6 and DF flag set */
-	{
-		rohc_decomp_warn(context, "DF flag set and IP header is IPv6");
-		goto error;
-	}
 
 	/* get the Protocol field if present */
 	if(is_pr)
@@ -629,23 +624,6 @@ int parse_inner_header_flags(const struct rohc_decomp_ctxt *const context,
 		bits->rnd = rnd;
 		bits->rnd_nr = 1;
 	}
-	else
-	{
-		/* IPv6 and NBO flag set */
-		if(nbo)
-		{
-			rohc_decomp_warn(context, "NBO flag set and IP header is IPv6");
-			goto error;
-		}
-
-		/* IPv6 and RND flag set */
-		if(rnd)
-		{
-			rohc_decomp_warn(context, "RND flag set and IP header is IPv6");
-			goto error;
-		}
-	}
-
 	return read;
 
 error:
@@ -728,13 +706,6 @@ int parse_outer_header_flags(const struct rohc_decomp_ctxt *const context,
 	/* get the outer IP-ID if IPv4 */
 	if(is_I2)
 	{
-		if(bits->version != IPV4)
-		{
-			rohc_decomp_warn(context, "IP-ID field present (I2 = 1) and IP "
-			                 "header is IPv6");
-			goto error;
-		}
-
 		assert(bits->rnd_nr == 1);
 		if(bits->rnd)
 		{

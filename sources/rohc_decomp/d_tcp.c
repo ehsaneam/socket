@@ -3078,11 +3078,6 @@ static bool d_tcp_decode_bits_ip_hdr(const struct rohc_decomp_ctxt *const contex
 		memcpy(ip_decoded->saddr, &ip_context->ctxt.v4.src_addr, 4);
 		rohc_decomp_debug(context, "  4-byte source address (context)");
 	}
-	else /* IPv6 */
-	{
-		memcpy(ip_decoded->saddr, ip_context->ctxt.v6.src_addr, 16);
-		rohc_decomp_debug(context, "  16-byte source address (context)");
-	}
 
 	/* destination address */
 	if(ip_bits->daddr_nr > 0)
@@ -3095,11 +3090,6 @@ static bool d_tcp_decode_bits_ip_hdr(const struct rohc_decomp_ctxt *const contex
 	{
 		memcpy(ip_decoded->daddr, &ip_context->ctxt.v4.dst_addr, 4);
 		rohc_decomp_debug(context, "  4-byte destination address (context)");
-	}
-	else /* IPv6 */
-	{
-		memcpy(ip_decoded->daddr, ip_context->ctxt.v6.dest_addr, 16);
-		rohc_decomp_debug(context, "  16-byte destination address (context)");
 	}
 
 	/* extension headers */
@@ -4289,31 +4279,6 @@ static void d_tcp_update_ctxt(struct rohc_decomp_ctxt *const context,
 			assert(ip_decoded->opts_len == 0);
 			ip_context->opts_nr = ip_decoded->opts_nr;
 			ip_context->opts_len = ip_decoded->opts_len;
-		}
-		else /* IPv6 */
-		{
-			size_t ext_pos;
-
-			assert((ip_decoded->flowid & 0xfffff) == ip_decoded->flowid);
-			ip_context->ctxt.v6.flow_label = ip_decoded->flowid;
-			memcpy(&ip_context->ctxt.v6.src_addr, ip_decoded->saddr, 16);
-			memcpy(&ip_context->ctxt.v6.dest_addr, ip_decoded->daddr, 16);
-
-			/* remember the extension headers */
-			ip_context->opts_nr = ip_decoded->opts_nr;
-			ip_context->opts_len = ip_decoded->opts_len;
-			for(ext_pos = 0; ext_pos < ip_context->opts_nr; ext_pos++)
-			{
-				const size_t ext_len = ip_decoded->opts[ext_pos].len;
-				const uint8_t ext_proto = ip_decoded->opts[ext_pos].proto;
-
-				rohc_decomp_debug(context, "  update context for the %zu-byte '%s' (%u) "
-				                  "extension header #%zu", ext_len,
-				                  rohc_get_ip_proto_descr(ext_proto), ext_proto,
-				                  ext_pos + 1);
-				memcpy(&(ip_context->opts[ext_pos]), &(ip_decoded->opts[ext_pos]),
-				       sizeof(ip_option_context_t));
-			}
 		}
 	}
 	tcp_context->ip_contexts_nr = decoded->ip_nr;

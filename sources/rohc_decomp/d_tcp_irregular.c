@@ -53,14 +53,6 @@ static int tcp_parse_irregular_ipv4(const struct rohc_decomp_ctxt *const context
                                     struct rohc_tcp_extr_ip_bits *const ip_bits)
 	__attribute__((warn_unused_result, nonnull(1, 2, 6, 7)));
 
-static int tcp_parse_irregular_ipv6(const struct rohc_decomp_ctxt *const context,
-                                    const uint8_t *rohc_data,
-                                    const size_t rohc_data_len,
-                                    const bool is_innermost,
-                                    struct rohc_tcp_extr_bits *const bits,
-                                    struct rohc_tcp_extr_ip_bits *const ip_bits)
-	__attribute__((warn_unused_result, nonnull(1, 2, 5, 6)));
-
 static int tcp_parse_irregular_tcp(const struct rohc_decomp_ctxt *const context,
                                    const uint8_t *const rohc_data,
                                    const size_t rohc_data_len,
@@ -202,11 +194,6 @@ static int tcp_parse_irregular_ip(const struct rohc_decomp_ctxt *const context,
 		ret = tcp_parse_irregular_ipv4(context, rohc_data, rohc_data_len,
 		                               is_innermost, ip_id_behavior, bits, ip_bits);
 	}
-	else
-	{
-		ret = tcp_parse_irregular_ipv6(context, rohc_data, rohc_data_len,
-		                               is_innermost, bits, ip_bits);
-	}
 	if(ret < 0)
 	{
 		rohc_decomp_warn(context, "failed to parse the IP part of the irregular "
@@ -326,87 +313,6 @@ skip:
 error:
 	return -1;
 }
-
-
-/**
- * @brief Decode the irregular IPv6 header of the rohc packet.
- *
- * @param context         The decompression context
- * @param rohc_data       The remaining part of the ROHC packet
- * @param rohc_data_len   The length of remaining part of the ROHC packet
- * @param is_innermost    True if the IP header is the innermost of the packet
- * @param[out] bits       The bits extracted from the irregular chain
- *                        in case of success
- * @param[out] ip_bits    The bits extracted from the irregular chain for the
- *                        current IPv6 header in case of success
- * @return                The number of ROHC bytes parsed,
- *                        -1 if packet is malformed
- */
-static int tcp_parse_irregular_ipv6(const struct rohc_decomp_ctxt *const context,
-                                    const uint8_t *rohc_data,
-                                    const size_t rohc_data_len,
-                                    const bool is_innermost,
-                                    struct rohc_tcp_extr_bits *const bits,
-                                    struct rohc_tcp_extr_ip_bits *const ip_bits)
-{
-	const struct d_tcp_context *const tcp_context = context->persist_ctxt;
-	const uint8_t *remain_data;
-	size_t remain_len;
-
-	remain_data = rohc_data;
-	remain_len = rohc_data_len;
-
-	if(is_innermost)
-	{
-		/* ipv6_innermost_irregular: ip_inner_ecn is transmitted by the TCP part
-		 * of the irregular chain */
-		goto skip;
-	}
-
-	/* ipv6_outer_without_ttl_irregular or ipv6_outer_with_ttl_irregular */
-
-	/* parse DSCP and ECN flags if present */
-	if(d_tcp_is_ecn_used(tcp_context, bits))
-	{
-		if(remain_len < 1)
-		{
-			rohc_decomp_warn(context, "packet too short for DSCP/ECN: only %zu bytes "
-			                 "available while at least 1 byte required", remain_len);
-			goto error;
-		}
-		ip_bits->dscp_bits = (remain_data[0] >> 2) & 0x3f;
-		ip_bits->dscp_bits_nr = 6;
-		ip_bits->ecn_flags_bits = (remain_data[0] & 0x03);
-		ip_bits->ecn_flags_bits_nr = 2;
-		remain_data++;
-		remain_len--;
-		rohc_decomp_debug(context, "read DSCP = 0x%x, ip_ecn_flags = %d",
-		                  ip_bits->dscp_bits, ip_bits->ecn_flags_bits);
-	}
-
-	/* parse TTL/HL if present */
-	if(bits->ttl_irreg_chain_flag)
-	{
-		if(remain_len < 1)
-		{
-			rohc_decomp_warn(context, "packet too short for TTL/HL: only %zu bytes "
-			                 "available while at least 1 byte required", remain_len);
-			goto error;
-		}
-		ip_bits->ttl_hl.bits = remain_data[0];
-		ip_bits->ttl_hl.bits_nr = 8;
-		remain_data++;
-		remain_len--;
-		rohc_decomp_debug(context, "ttl_hopl = 0x%02x", ip_bits->ttl_hl.bits);
-	}
-
-skip:
-	return (remain_data - rohc_data);
-
-error:
-	return -1;
-}
-
 
 /**
  * @brief Decode the irregular TCP header of the rohc packet.

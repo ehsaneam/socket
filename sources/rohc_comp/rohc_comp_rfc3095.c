@@ -57,12 +57,6 @@
 #define MOD_TTL       0x0010
 /** A flag to indicate that the IPv4 Protocol field changed in IP header */
 #define MOD_PROTOCOL  0x0020
-/** A flag to indicate that the structure of the IPv6 extension headers list
- *  changed in IP header */
-#define MOD_IPV6_EXT_LIST_STRUCT 0x0002
-/** A flag to indicate that the content of the IPv6 extension headers list
- *  changed in IP header */
-#define MOD_IPV6_EXT_LIST_CONTENT 0x0004
 /** A flag to indicate that an errror occurred */
 #define MOD_ERROR 0x0008
 
@@ -1433,32 +1427,6 @@ static rohc_packet_t decide_packet(struct rohc_comp_ctxt *const context)
 		}
 	}
 	rohc_comp_debug(context, "packet '%s' chosen", rohc_get_packet_descr(packet));
-
-	/* force IR-DYN packet because some bits shall be sent for the list of IPv6
-	 * extension headers of the outer IP header */
-	if(packet > ROHC_PACKET_IR_DYN &&
-	   is_field_changed(rfc3095_ctxt->tmp.changed_fields,
-	                    MOD_IPV6_EXT_LIST_STRUCT | MOD_IPV6_EXT_LIST_CONTENT))
-	{
-		rohc_comp_debug(context, "force IR-DYN packet because some bits shall "
-		                "be sent for the extension header list of the outer "
-		                "IPv6 header");
-		/* TODO: could be UOR-2 with extension 3 and IPX=1 */
-		packet = ROHC_PACKET_IR_DYN;
-	}
-	/* force IR-DYN packet because some bits shall be sent for the list of IPv6
-	 * extension headers of the inner IP header */
-	else if(packet > ROHC_PACKET_IR_DYN &&
-	        rfc3095_ctxt->ip_hdr_nr > 1 &&
-	        is_field_changed(rfc3095_ctxt->tmp.changed_fields2,
-	                         MOD_IPV6_EXT_LIST_STRUCT | MOD_IPV6_EXT_LIST_CONTENT))
-	{
-		rohc_comp_debug(context, "force IR-DYN packet because some bits shall "
-		                "be sent for the extension header list of the inner "
-		                "IPv6 header");
-		/* TODO: could be UOR-2 with extension 3 and IPX2=1 */
-		packet = ROHC_PACKET_IR_DYN;
-	}
 
 	return packet;
 
@@ -4035,22 +4003,6 @@ static int changed_dynamic_one_hdr(struct rohc_comp_ctxt *const context,
 			{
 				rohc_comp_debug(context, "SID changed in the last few packets");
 			}
-		}
-	}
-	else /* IPv6-only checks */
-	{
-		/* check changes with IPv6 extension headers */
-		if(is_field_changed(changed_fields, MOD_IPV6_EXT_LIST_STRUCT))
-		{
-			rohc_comp_debug(context, "the structure of the list of IPv6 "
-			                "extension headers changed");
-			nb_fields++;
-		}
-		else if(is_field_changed(changed_fields, MOD_IPV6_EXT_LIST_CONTENT))
-		{
-			rohc_comp_debug(context, "the content of the list of IPv6 "
-			                "extension headers changed");
-			nb_fields++;
 		}
 	}
 

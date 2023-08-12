@@ -85,8 +85,6 @@ struct rohc_extr_ip_bits
 	                      header or in extension header */
 	size_t sid_nr;   /**< The number of SID bits found */
 
-	uint32_t flowid:20;  /**< The IPv6 flow ID bits found in static chain of
-	                          IR header */
 	size_t flowid_nr;    /**< The number of flow label bits */
 
 	uint8_t saddr[16];   /**< The source address bits found in static chain of
@@ -175,7 +173,6 @@ struct rohc_decoded_ip_values
 	uint8_t nbo:1;       /**< The decoded NBO field (IPv4 only) */
 	uint8_t rnd:1;       /**< The decoded RND field (IPv4 only) */
 	uint8_t sid:1;       /**< The decoded SID field (IPv4 only) */
-	uint32_t flowid:20;  /**< The decoded flow ID field (IPv6 only) */
 	uint8_t saddr[16];   /**< The decoded source address field */
 	uint8_t daddr[16];   /**< The decoded destination address field */
 };

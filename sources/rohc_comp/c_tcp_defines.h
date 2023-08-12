@@ -43,12 +43,6 @@
  */
 struct tcp_tmp_variables
 {
-	/** Whether at least one of the static part of the IPv6 extensions changed
-	 * in the current packet */
-	bool is_ipv6_exts_list_static_changed;
-	/** Whether at least one of the dynamic part of the IPv6 extensions changed
-	 * in the current packet */
-	bool is_ipv6_exts_list_dyn_changed;
 	/** The new number of IP extensions headers (for every IP header) */
 	size_t ip_exts_nr[ROHC_TCP_MAX_IP_HDRS];
 
@@ -154,42 +148,6 @@ typedef struct __attribute__((packed)) ipv4_context
 
 } ipv4_context_t;
 
-
-/** The compression context for one IPv6 extension header */
-typedef union
-{
-	/* TODO: GRE not yet supported */
-	/* TODO: MINE not yet supported */
-	/* TODO: AH not yet supported */
-} ip_option_context_t;
-
-
-/**
- * @brief Define the IPv6 header context.
- */
-typedef struct __attribute__((packed)) ipv6_context
-{
-	uint8_t version:4;
-	uint8_t unused:4;
-
-	uint8_t dscp:6;
-	uint8_t ip_ecn_flags:2;
-
-	uint8_t next_header;
-
-	uint8_t ttl_hopl;
-
-	uint8_t ip_id_behavior;
-	uint8_t last_ip_id_behavior;
-
-	uint32_t flow_label:20;
-
-	uint32_t src_addr[4];
-	uint32_t dest_addr[4];
-
-} ipv6_context_t;
-
-
 /**
  * @brief Define union of IP contexts
  */
@@ -200,14 +158,12 @@ typedef struct
 	{
 		ipvx_context_t vx;
 		ipv4_context_t v4;
-		ipv6_context_t v6;
 	} ctxt;
 
 	/* Context Replication */
 	bool cr_ttl_hopl_present;
 
 	size_t opts_nr;
-	ip_option_context_t opts[ROHC_TCP_MAX_IP_EXT_HDRS];
 
 } ip_context_t;
 
