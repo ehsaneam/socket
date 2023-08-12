@@ -115,10 +115,6 @@ const char * rohc_get_mode_descr(const rohc_mode_t mode)
 	{
 		case ROHC_U_MODE:
 			return "U-mode";
-		case ROHC_O_MODE:
-			return "O-mode";
-		case ROHC_R_MODE:
-			return "R-mode";
 		case ROHC_UNKNOWN_MODE:
 		default:
 			return "no description";

@@ -110,11 +110,6 @@ typedef enum
 	ROHC_UNKNOWN_MODE = 0,
 	/** The Unidirectional mode (U-mode) */
 	ROHC_U_MODE = 1,
-	/** The Bidirectional Optimistic mode (O-mode) */
-	ROHC_O_MODE = 2,
-	/** The Bidirectional Reliable mode (R-mode) */
-	ROHC_R_MODE = 3,
-
 } rohc_mode_t;
 
 

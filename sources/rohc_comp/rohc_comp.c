@@ -70,7 +70,6 @@ extern const struct rohc_comp_profile c_tcp_profile;
 extern const struct rohc_comp_profile c_ip_profile;
 extern const struct rohc_comp_profile c_uncompressed_profile;
 
-
 /**
  * @brief The compression parts of the ROHC profiles.
  *
@@ -85,7 +84,6 @@ static const struct rohc_comp_profile *const rohc_comp_profiles[C_NUM_PROFILES] 
 	&c_uncompressed_profile, /* must be declared last */
 };
 
-
 /*
  * Prototypes of private functions related to ROHC compression profiles
  */
@@ -99,7 +97,6 @@ static const struct rohc_comp_profile *
 	c_get_profile_from_packet(const struct rohc_comp *const comp,
 	                          const struct net_pkt *const packet)
 	__attribute__((warn_unused_result, nonnull(1, 2)));
-
 
 /*
  * Prototypes of private functions related to ROHC compression contexts
@@ -128,7 +125,6 @@ static struct rohc_comp_ctxt *
 /*
  * Definitions of public functions
  */
-
 
 /**
  * @brief Create a new ROHC compressor
@@ -298,7 +294,6 @@ error:
 	return NULL;
 }
 
-
 /**
  * @brief Destroy the given ROHC compressor
  *
@@ -336,7 +331,6 @@ void rohc_comp_free(struct rohc_comp *const comp)
 		free(comp);
 	}
 }
-
 
 /**
  * @brief Set the callback function used to manage traces in compressor
@@ -666,99 +660,6 @@ error:
 	return ROHC_STATUS_ERROR;
 }
 
-
-/**
- * @brief Pad the given ROHC compressed packet
- *
- * Add as many padding bytes as required to get a ROHC packet of the given length.
- *
- * @param comp              The ROHC compressor
- * @param[in,out] rohc_pkt  The compressed ROHC packet to pad up to \e min_pkt_len
- * @param min_pkt_len       The minimum length of the ROHC packet
- * @return                  Possible return values:
- *                          \li \ref ROHC_STATUS_OK if a padded ROHC packet is
- *                              returned
- *                          \li \ref ROHC_STATUS_OUTPUT_TOO_SMALL if the
- *                              buffer is too small for the padded ROHC packet
- *                          \li \ref ROHC_STATUS_ERROR if an error occurred
- *
- * @ingroup rohc_comp
- *
- * @see rohc_compress4
- */
-rohc_status_t rohc_comp_pad(struct rohc_comp *const comp,
-                            struct rohc_buf *const rohc_pkt,
-                            const size_t min_pkt_len)
-{
-	rohc_status_t status = ROHC_STATUS_ERROR; /* error status by default */
-	const uint8_t padding_byte = ROHC_PADDING_BYTE;
-	size_t padding_bytes_nr = 0;
-	size_t i;
-
-	/* check inputs validity */
-	if(comp == NULL)
-	{
-		goto error;
-	}
-	if(rohc_pkt == NULL)
-	{
-		rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		             "given rohc_pkt is NULL");
-		goto error;
-	}
-	if(rohc_buf_is_malformed(*rohc_pkt))
-	{
-		rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		             "given rohc_pkt is malformed");
-		goto error;
-	}
-	if(rohc_buf_is_empty(*rohc_pkt))
-	{
-		rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		             "given rohc_pkt is empty");
-		goto error;
-	}
-
-	/* if ROHC packet is already smaller than the minimum length, prepend
-	 * some padding bytes before the ROHC packet up to the minimum length */
-	if(rohc_pkt->len >= min_pkt_len)
-	{
-		padding_bytes_nr = 0;
-	}
-	else
-	{
-		padding_bytes_nr = min_pkt_len - rohc_pkt->len;
-	}
-
-	/* ROHC packet cannot be padded if buffer has not enough room before packet */
-	if(rohc_pkt->offset < padding_bytes_nr)
-	{
-		rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		             "%zu-byte ROHC packet cannot be padded up to %zu bytes with "
-		             "%zu bytes: only %zu bytes available in buffer before ROHC "
-		             "data", rohc_pkt->len, min_pkt_len, padding_bytes_nr,
-		             rohc_pkt->offset);
-		status = ROHC_STATUS_OUTPUT_TOO_SMALL;
-		goto error;
-	}
-
-	/* add required padding bytes */
-	rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-	           "pad %zu-byte ROHC packet up to %zu bytes with %zu bytes",
-	           rohc_pkt->len, min_pkt_len, padding_bytes_nr);
-	for(i = 0; i < padding_bytes_nr; i++)
-	{
-		rohc_buf_prepend(rohc_pkt, &padding_byte, 1);
-	}
-	assert(rohc_pkt->len >= min_pkt_len);
-
-	/* everything went fine */
-	status = ROHC_STATUS_OK;
-
-error:
-	return status;
-}
-
 /**
  * @brief Force the compressor to re-initialize all its contexts
  *
@@ -993,7 +894,6 @@ bool rohc_comp_set_periodic_refreshes_time(struct rohc_comp *const comp,
 	return true;
 }
 
-
 /**
  * @brief Set the number of uncompressed transmissions for list compression
  *
@@ -1100,7 +1000,6 @@ error:
 	return false;
 }
 
-
 /**
  * @brief Enable a compression profile for a compressor
  *
@@ -1171,7 +1070,6 @@ bool rohc_comp_enable_profile(struct rohc_comp *const comp,
 error:
 	return false;
 }
-
 
 /**
  * @brief Disable a compression profile for a compressor
@@ -1661,7 +1559,6 @@ const char * rohc_comp_get_state_descr(const rohc_comp_state_t state)
  * Definitions of private functions
  */
 
-
 /**
  * @brief Find out a ROHC profile given a profile ID
  *
@@ -2141,13 +2038,6 @@ void rohc_comp_change_mode(struct rohc_comp_ctxt *const context,
 {
 	if(context->mode != new_mode)
 	{
-		/* TODO: R-mode is not yet supported */
-		if(new_mode == ROHC_R_MODE)
-		{
-			rohc_comp_warn(context, "ignore change to R-mode because R-mode is "
-			               "not supported yet");
-			return;
-		}
 		/* TODO: downward transition to U-mode is not yet supported */
 		if(new_mode == ROHC_U_MODE)
 		{

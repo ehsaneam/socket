@@ -366,7 +366,6 @@ static void context_free(struct rohc_decomp_ctxt *const context)
  * @param mode      The operational mode that the ROHC decompressor shall target.\n
  *                  Accepted values are:
  *                    \li \ref ROHC_U_MODE for the Unidirectional mode,
- *                    \li \ref ROHC_O_MODE for the Bidirectional Optimistic
  *                        mode,
  *                    \li \ref ROHC_R_MODE for the Bidirectional Reliable mode
  *                        is not supported yet: specifying \ref ROHC_R_MODE is
@@ -432,14 +431,9 @@ struct rohc_decomp * rohc_decomp_new2(const rohc_cid_type_t cid_type,
 		/* unexpected CID type */
 		goto error;
 	}
-	if(mode != ROHC_U_MODE && mode != ROHC_O_MODE && mode != ROHC_R_MODE)
+	if(mode != ROHC_U_MODE)
 	{
 		/* unexpected operational mode */
-		goto error;
-	}
-	else if(mode == ROHC_R_MODE)
-	{
-		/* R-mode is not supported yet */
 		goto error;
 	}
 
@@ -695,48 +689,6 @@ rohc_status_t rohc_decompress3(struct rohc_decomp *const decomp,
 				rohc_debug(decomp, ROHC_TRACE_DECOMP, stream.profile_id,
 				           "stay in U-mode as requested by user");
 			}
-			else if(decomp->target_mode == ROHC_O_MODE)
-			{
-				rohc_debug(decomp, ROHC_TRACE_DECOMP, stream.profile_id,
-				           "transit from U-mode to O-mode as requested by user");
-				stream.context->mode = ROHC_O_MODE;
-				/* ACK(O), NACK(O) or STATIC-NACK(O) will transmit the mode
-				 * transition to the remote compressor */
-				stream.mode = ROHC_O_MODE;
-				stream.do_change_mode = true;
-			}
-			else /* R-mode */
-			{
-				assert(0); /* TODO: R-mode not supported yet */
-				status = ROHC_STATUS_ERROR;
-				goto error;
-			}
-		}
-		else if(stream.context->mode == ROHC_O_MODE)
-		{
-			if(decomp->target_mode == ROHC_U_MODE)
-			{
-				assert(0); /* TODO: O- to U-mode transition not supported yet */
-				status = ROHC_STATUS_ERROR;
-				goto error;
-			}
-			else if(decomp->target_mode == ROHC_O_MODE)
-			{
-				rohc_debug(decomp, ROHC_TRACE_DECOMP, stream.profile_id,
-				           "stay in O-mode as requested by user");
-			}
-			else /* R-mode */
-			{
-				assert(0); /* TODO: R-mode not supported yet */
-				status = ROHC_STATUS_ERROR;
-				goto error;
-			}
-		}
-		else /* R-mode */
-		{
-			assert(0); /* TODO: R-mode not supported yet */
-			status = ROHC_STATUS_ERROR;
-			goto error;
 		}
 	}
 

@@ -315,7 +315,7 @@ struct rohc_comp_ctxt
 	rohc_cid_t cr_base_cid;
 
 	/** The operation mode in which the context operates among:
-	 *  ROHC_U_MODE, ROHC_O_MODE, ROHC_R_MODE */
+	 *  ROHC_U_MODE, ROHC_R_MODE */
 	rohc_mode_t mode;
 	/** The operation state in which the context operates: IR, FO, SO */
 	rohc_comp_state_t state;
