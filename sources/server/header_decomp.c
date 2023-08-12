@@ -45,17 +45,7 @@ int decompressPacket(unsigned char *rohc_buffer, int rohc_len, unsigned char *ip
 
 int initDecompressor(rohc_cid_type_t rohc_cid_type)
 {
-    /* Create a ROHC decompressor to operate:
-	 *  - with large CIDs,
-	 *  - with the maximum of 5 streams (MAX_CID = 4),
-	 *  - in Unidirectional mode (U-mode).
-	 */
-    if( rohc_cid_type==ROHC_LARGE_CID )
-    {
-        decompressor = rohc_decomp_new2(ROHC_LARGE_CID, ROHC_LARGE_CID_MAX, 
-                                ROHC_U_MODE);
-    }
-    else if( rohc_cid_type==ROHC_SMALL_CID )
+    if( rohc_cid_type==ROHC_SMALL_CID )
     {
         decompressor = rohc_decomp_new2(ROHC_SMALL_CID, ROHC_SMALL_CID_MAX, 
                                 ROHC_U_MODE);

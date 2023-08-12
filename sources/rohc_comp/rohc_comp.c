@@ -202,14 +202,6 @@ struct rohc_comp * rohc_comp_new2(const rohc_cid_type_t cid_type,
 			goto error;
 		}
 	}
-	else if(cid_type == ROHC_LARGE_CID)
-	{
-		/* use large CIDs in range [0, ROHC_LARGE_CID_MAX] */
-		if(max_cid > ROHC_LARGE_CID_MAX)
-		{
-			goto error;
-		}
-	}
 	else
 	{
 		/* unexpected CID type */
@@ -1831,7 +1823,7 @@ static struct rohc_comp_ctxt *
 	rohc_cid_t i;
 
 	bool do_ctxt_replication = false;
-	rohc_cid_t best_ctxt_for_replication = ROHC_LARGE_CID_MAX + 1;
+	rohc_cid_t best_ctxt_for_replication = ROHC_SMALL_CID_MAX + 1;
 
 	/* use the suggested profile if any, otherwise find the best profile for
 	 * the packet */

@@ -89,26 +89,6 @@ int code_cid_values(const rohc_cid_type_t cid_type,
 			counter = 1;
 		}
 	}
-	else /* large CID */
-	{
-		size_t sdvl_len;
-
-		*first_position = 0;
-		counter++;
-
-		/* SDVL-encode the large CID */
-		if(!sdvl_encode_full(dest + counter, dest_size, &sdvl_len, cid))
-		{
-			/* failed to SDVL-encode the large CID */
-			goto error;
-		}
-		else if(sdvl_len != 1 && sdvl_len != 2)
-		{
-			/* SDVL-encoded large CID shall be 1 or 2 byte long */
-			goto error;
-		}
-		counter += sdvl_len;
-	}
 
 	return counter;
 

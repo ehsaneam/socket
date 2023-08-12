@@ -92,7 +92,7 @@ void initServer()
     openSocket();
     PRINT_INFO_SOCK("socket opened\n");
 
-    if( initDecompressor(ROHC_LARGE_CID)<0 )
+    if( initDecompressor(ROHC_SMALL_CID)<0 )
     {
         close(sockfd);
         exit(EXIT_FAILURE);

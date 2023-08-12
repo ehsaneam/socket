@@ -112,19 +112,6 @@ typedef enum
 	ROHC_U_MODE = 1,
 } rohc_mode_t;
 
-
-/**
- * @brief The maximum value for large CIDs
- *
- * @ingroup rohc
- *
- * @see rohc_comp_new
- * @see rohc_c_set_max_cid
- * @see rohc_decomp_set_max_cid
- */
-#define ROHC_LARGE_CID_MAX  ((1U << 14) - 1) /* 2^14 - 1 = 16383 */
-
-
 /**
  * @brief The maximum value for small CIDs
  *
@@ -148,10 +135,6 @@ typedef enum
  * decompressor may use.
  *
  * Possible values are:
- *  \li \ref ROHC_LARGE_CID : large CID means that a ROHC compressor or a ROHC
- *      decompressor may identify contexts with IDs in the range
- *      [0, \ref ROHC_LARGE_CID_MAX ], ie. it may uniquely identify at
- *      most \e ROHC_LARGE_CID_MAX + 1 streams.
  *  \li \ref ROHC_SMALL_CID : small CID means that a ROHC compressor or a ROHC
  *      decompressor may identify contexts with IDs in the range
  *      [0, \ref ROHC_SMALL_CID_MAX ], ie. it may uniquely identify at
@@ -160,18 +143,11 @@ typedef enum
  * In short, you choose the CID type in function of the number of simultaneous
  * streams you have to compress efficiently.
  *
- * @see ROHC_SMALL_CID_MAX ROHC_LARGE_CID_MAX
  *
  * @ingroup rohc
  */
 typedef enum
 {
-	/**
-	 * @brief The context uses large CID
-	 *
-	 * CID values shall be in the range [0, \ref ROHC_LARGE_CID_MAX].
-	 */
-	ROHC_LARGE_CID,
 	/**
 	 * @brief The context uses small CID
 	 *

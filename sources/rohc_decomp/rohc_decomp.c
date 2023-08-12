@@ -239,7 +239,7 @@ static struct rohc_decomp_ctxt * context_create(struct rohc_decomp *decomp,
 	struct rohc_decomp_ctxt *context;
 
 	assert(decomp != NULL);
-	assert(cid <= ROHC_LARGE_CID_MAX);
+	assert(cid <= ROHC_SMALL_CID_MAX);
 	assert(profile != NULL);
 
 	/* allocate memory for the decompression context */
@@ -414,14 +414,6 @@ struct rohc_decomp * rohc_decomp_new2(const rohc_cid_type_t cid_type,
 	{
 		/* use small CIDs in range [0, ROHC_SMALL_CID_MAX] */
 		if(max_cid > ROHC_SMALL_CID_MAX)
-		{
-			goto error;
-		}
-	}
-	else if(cid_type == ROHC_LARGE_CID)
-	{
-		/* use large CIDs in range [0, ROHC_LARGE_CID_MAX] */
-		if(max_cid > ROHC_LARGE_CID_MAX)
 		{
 			goto error;
 		}
@@ -2417,31 +2409,6 @@ static bool rohc_decomp_decode_cid(struct rohc_decomp *decomp,
 			*add_cid_len = 1;
 		}
 	}
-	else if(decomp->medium.cid_type == ROHC_LARGE_CID)
-	{
-		uint32_t large_cid;
-		size_t large_cid_bits_nr;
-
-		/* large CID */
-		*add_cid_len = 0;
-
-		/* skip the first byte of packet located just before the large CID */
-		packet++;
-		len--;
-
-		/* decode SDVL-encoded large CID
-		 * (only 1-byte and 2-byte SDVL fields are allowed) */
-		*large_cid_len = sdvl_decode(packet, len, &large_cid, &large_cid_bits_nr);
-		if((*large_cid_len) != 1 && (*large_cid_len) != 2)
-		{
-			rohc_warning(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-			             "failed to decode SDVL-encoded large CID field");
-			goto error;
-		}
-		*cid = large_cid & 0xffff;
-		rohc_debug(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
-		           "%zu-byte large CID = %zu", *large_cid_len, *cid);
-	}
 	else
 	{
 		rohc_error(decomp, ROHC_TRACE_DECOMP, ROHC_PROFILE_GENERAL,
@@ -2677,7 +2644,7 @@ error_no_context:
 /**
  * @brief Create the array of decompression contexts
  *
- * The maximum size of the array is \ref ROHC_LARGE_CID_MAX + 1.
+ * The maximum size of the array is \ref ROHC_SMALL_CID_MAX + 1.
  *
  * @param decomp   The ROHC decompressor
  * @param max_cid  The MAX_CID value to used
@@ -2687,7 +2654,7 @@ static bool rohc_decomp_create_contexts(struct rohc_decomp *const decomp,
                                         const rohc_cid_t max_cid)
 {
 	assert(decomp != NULL);
-	assert(max_cid <= ROHC_LARGE_CID_MAX);
+	assert(max_cid <= ROHC_SMALL_CID_MAX);
 
 	/* allocate memory for the new context array */
 	decomp->contexts = calloc(max_cid + 1, sizeof(struct rohc_decomp_ctxt *));

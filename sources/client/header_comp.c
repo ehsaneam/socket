@@ -45,14 +45,7 @@ int initCompressor(rohc_cid_type_t rohc_cid_type)
 {
     unsigned int seed = (unsigned int) time(NULL);
 	srand(seed);
-    /* Create a ROHC compressor with small CIDs and the largest MAX_CID
-	 * possible for small CIDs */
-    if( rohc_cid_type==ROHC_LARGE_CID )
-    {
-        compressor = rohc_comp_new2(ROHC_LARGE_CID, ROHC_LARGE_CID_MAX,
-	                            genRandNum, NULL);
-    }
-    else if( rohc_cid_type==ROHC_SMALL_CID )
+    if( rohc_cid_type==ROHC_SMALL_CID )
     {
         compressor = rohc_comp_new2(ROHC_SMALL_CID, ROHC_SMALL_CID_MAX,
 	                            genRandNum, NULL);

@@ -113,7 +113,7 @@ void initClient()
     openSocket();
     PRINT_INFO_SOCK("socket opened\n");
 
-    if( initCompressor(ROHC_LARGE_CID)<0 )
+    if( initCompressor(ROHC_SMALL_CID)<0 )
     {
         closeClient();
         exit(EXIT_FAILURE);

@@ -1248,25 +1248,6 @@ static int code_IR_packet(struct rohc_comp_ctxt *const context,
 				rohc_remain_len--;
 				rohc_hdr_len++;
 			}
-			else /* ROHC_LARGE_CID */
-			{
-				ret = code_cid_values(context->compressor->medium.cid_type,
-				                      context->cr_base_cid, rohc_remain_data - 1,
-				                      rohc_remain_len + 1, &first_position);
-				if(ret < 1)
-				{
-					rohc_comp_warn(context, "failed to encode large base CID %zu: "
-					               "maybe the %zu-byte ROHC buffer is too small",
-					               context->cr_base_cid, rohc_remain_len);
-					goto error;
-				}
-				assert(ret == 2 || ret == 3);
-				rohc_remain_data += ret - 1;
-				rohc_remain_len -= ret - 1;
-				rohc_hdr_len += ret - 1;
-				rohc_comp_debug(context, "large Base CID %zu encoded on %d byte(s)",
-				                context->cr_base_cid, ret - 1);
-			}
 		}
 
 		/* add replicate chain for IR-CR packet only */

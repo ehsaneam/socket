@@ -953,26 +953,6 @@ static bool d_tcp_parse_ir_cr(const struct rohc_decomp_ctxt *const context,
 			remain_len--;
 			rohc_decomp_debug(context, "1-byte small base CID = %zu", base_cid);
 		}
-		else /* ROHC_LARGE_CID */
-		{
-			/* decode SDVL-encoded large Base CID
-			 * (only 1-byte and 2-byte SDVL fields are allowed) */
-			uint32_t base_cid_32b;
-			size_t base_cid_bits_nr;
-			const size_t base_cid_len =
-				sdvl_decode(remain_data, remain_len, &base_cid_32b, &base_cid_bits_nr);
-			if(base_cid_len != 1 && base_cid_len != 2)
-			{
-				rohc_decomp_warn(context, "failed to decode SDVL-encoded large "
-				                 "base CID field");
-				goto error;
-			}
-			base_cid = base_cid_32b & 0xffff;
-			rohc_decomp_debug(context, "%zu-byte large base CID = %zu",
-			                  base_cid_len, base_cid);
-			remain_data += base_cid_len;
-			remain_len -= base_cid_len;
-		}
 	}
 	rohc_decomp_debug(context, "IR-CR asks to replicate the Base CID %zu in the "
 	                  "CID %zu", base_cid, context->cid);
