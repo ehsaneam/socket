@@ -56,7 +56,6 @@ struct c_tcp_opt_ctxt
 	union
 	{
 		uint8_t raw[MAX_TCP_OPT_SIZE];
-		sack_block_t sack_blocks[4];
 		struct tcp_option_timestamp timestamp;
 	} data;
 };

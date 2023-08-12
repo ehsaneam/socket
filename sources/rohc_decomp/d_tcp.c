@@ -43,7 +43,6 @@
 #include "sdvl.h"
 #include "rfc4996.h"
 #include "decomp_wlsb.h"
-#include "tcp_sack.h"
 #include "tcp_ts.h"
 #include "tcp.h"
 #include "ip_numbers.h"
@@ -302,11 +301,6 @@ static bool d_tcp_decode_opt_ts_field(const struct rohc_decomp_ctxt *const conte
                                       const struct rohc_lsb_field32 ts,
                                       uint32_t *const ts_decoded)
 	__attribute__((warn_unused_result, nonnull(1, 2, 3, 5)));
-static void d_tcp_decode_opt_sack(const struct rohc_decomp_ctxt *const context,
-                                  const uint32_t ack_num,
-                                  const struct d_tcp_opt_sack bits,
-                                  struct d_tcp_opt_sack *const decoded)
-	__attribute__((nonnull(1, 4)));
 
 static bool d_tcp_build_ipv4_hdr(const struct rohc_decomp_ctxt *const context,
                                  const struct rohc_tcp_decoded_ip_values *const decoded,
@@ -397,8 +391,7 @@ static void d_tcp_create_from_ctxt(struct rohc_decomp_ctxt *const ctxt,
 	tcp_ctxt->urg_ptr = base_tcp_ctxt->urg_ptr;
 	memcpy(&tcp_ctxt->tcp_opts, &base_tcp_ctxt->tcp_opts,
 	       sizeof(struct d_tcp_opts_ctxt));
-	memcpy(&tcp_ctxt->opt_sack_blocks, &base_tcp_ctxt->opt_sack_blocks,
-	       sizeof(struct d_tcp_opt_sack));
+	
 	tcp_ctxt->ip_contexts_nr = base_tcp_ctxt->ip_contexts_nr;
 	memcpy(&tcp_ctxt->ip_contexts, &base_tcp_ctxt->ip_contexts,
 	       ROHC_TCP_MAX_IP_HDRS * sizeof(ip_context_t));
@@ -3576,12 +3569,6 @@ static bool d_tcp_decode_bits_tcp_opts(const struct rohc_decomp_ctxt *const cont
 			rohc_decomp_debug(context, "    TS echo reply = 0x%08x",
 			                  decoded->opt_ts_rep);
 		}
-		else if(opt_index == TCP_INDEX_SACK)
-		{
-			d_tcp_decode_opt_sack(context, decoded->ack_num,
-			                      bits->tcp_opts.bits[TCP_INDEX_SACK].data.sack,
-			                      &decoded->opt_sack_blocks);
-		}
 		else if(opt_index >= TCP_INDEX_GENERIC7)
 		{
 			/* generic option: in case of static or stable encoding, retrieve option
@@ -3659,60 +3646,6 @@ static bool d_tcp_decode_opt_ts_field(const struct rohc_decomp_ctxt *const conte
 error:
 	return false;
 }
-
-
-/**
- * @brief Decode the TCP SACK option
- *
- * @warning The available length in the \e opt_sack->uncomp_opt buffer shall have
- *          been checked before calling this function
- *
- * @param context       The decompression context
- * @param ack_num       The TCP ACK number of the current packet
- * @param bits          The bits of SACK option extracted from the packet
- * @param[out] decoded  The values decoded from the ROHC packet
- */
-static void d_tcp_decode_opt_sack(const struct rohc_decomp_ctxt *const context,
-                                  const uint32_t ack_num,
-                                  const struct d_tcp_opt_sack bits,
-                                  struct d_tcp_opt_sack *const decoded)
-{
-	if(bits.blocks_nr == 0)
-	{
-		struct d_tcp_context *const tcp_context = context->persist_ctxt;
-
-		/* TCP SACK option didn't change and wasn't transmitted, retrieve it from
-		 * the decompression context */
-		rohc_decomp_debug(context, "  decode SACK option (%zu blocks retrieved "
-		                  "from context)", bits.blocks_nr);
-		memcpy(decoded, &tcp_context->opt_sack_blocks, sizeof(struct d_tcp_opt_sack));
-	}
-	else if(bits.blocks_nr > 0)
-	{
-		uint32_t reference;
-		size_t i;
-
-		rohc_decomp_debug(context, "  decode SACK option (%zu blocks retrieved "
-		                  "from packet)", bits.blocks_nr);
-
-		/* decode every SACK block, one by one:
-		 *  - first block uses ACK as reference
-		 *  - next block uses current block end as reference */
-		for(i = 0, reference = ack_num;
-		    i < bits.blocks_nr;
-		    reference = rohc_ntoh32(decoded->blocks[i].block_end), i++)
-		{
-			const uint32_t block_start = reference + bits.blocks[i].block_start;
-			const uint32_t block_end = block_start + bits.blocks[i].block_end;
-			decoded->blocks[i].block_start = rohc_hton32(block_start);
-			decoded->blocks[i].block_end = rohc_hton32(block_end);
-			rohc_decomp_debug(context, "decoded SACK option: block #%zu = "
-			                  "[0x%08x, 0x%08x]", i + 1, block_start, block_end);
-		}
-		decoded->blocks_nr = bits.blocks_nr;
-	}
-}
-
 
 /**
  * @brief Build all of the uncompressed IP headers
@@ -4349,11 +4282,6 @@ static void d_tcp_update_ctxt(struct rohc_decomp_ctxt *const context,
 		{
 			rohc_lsb_set_ref(&tcp_context->opt_ts_req_lsb_ctxt, decoded->opt_ts_req, false);
 			rohc_lsb_set_ref(&tcp_context->opt_ts_rep_lsb_ctxt, decoded->opt_ts_rep, false);
-		}
-		else if(opt_index == TCP_INDEX_SACK)
-		{
-			memcpy(&tcp_context->opt_sack_blocks, &decoded->opt_sack_blocks,
-			       sizeof(struct d_tcp_opt_sack));
 		}
 	}
 }

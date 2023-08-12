@@ -176,9 +176,6 @@ typedef enum
 #define TCP_OLEN_MSS         4U
 	TCP_OPT_WS        = 3U,  /**< The Window Scale (WS) TCP option */
 #define TCP_OLEN_WS          3U
-	TCP_OPT_SACK_PERM = 4U,  /**< The SACK Permitted TCP option */
-#define TCP_OLEN_SACK_PERM   2U
-	TCP_OPT_SACK      = 5U,  /**< The Selective ACKnowledgement (SACK) TCP option */
 	TCP_OPT_TS        = 8U,  /**< The TimeStamp (TS) TCP option */
 #define TCP_OLEN_TS         10U
 	TCP_OPT_MAX       = 255U /**< The maximum TCP option */
@@ -191,8 +188,6 @@ typedef enum
 #define TCP_INDEX_MSS          2U
 #define TCP_INDEX_WS           3U
 #define TCP_INDEX_TS           4U
-#define TCP_INDEX_SACK_PERM    5U
-#define TCP_INDEX_SACK         6U
 #define TCP_INDEX_GENERIC7     7U
 #define TCP_INDEX_GENERIC8     8U
 #define TCP_INDEX_GENERIC9     9U
@@ -202,24 +197,6 @@ typedef enum
 #define TCP_INDEX_GENERIC13   13U
 #define TCP_INDEX_GENERIC14   14U
 #define TCP_INDEX_GENERIC15   15U
-
-
-/**
- * @brief The Selective Acknowlegment TCP option
- *
- * See RFC2018 for TCP Selective Acknowledgement Options
- * See RFC4996 page 66
- */
-typedef struct
-{
-	uint32_t block_start;
-	uint32_t block_end;
-} __attribute__((packed)) sack_block_t;
-
-
-/** The maximum number of SACK blocks in the TCP SACK option */
-#define TCP_SACK_BLOCKS_MAX_NR  4U
-
 
 /** The Timestamp option of the TCP header */
 struct tcp_option_timestamp
@@ -1092,10 +1069,6 @@ static inline char * tcp_opt_get_descr(const uint8_t opt_type)
 			return "NOP";
 		case TCP_OPT_WS:
 			return "Window Scale";
-		case TCP_OPT_SACK_PERM:
-			return "SACK permitted";
-		case TCP_OPT_SACK:
-			return "SACK";
 		case TCP_OPT_TS:
 			return "Timestamp";
 		default:

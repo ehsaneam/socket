@@ -29,8 +29,6 @@
 #include "c_tcp_opts_list.h"
 
 #include "tcp_ts.h"
-#include "tcp_sack.h"
-
 #include <string.h>
 
 
@@ -142,22 +140,6 @@ static int c_tcp_build_ts_list_item(const struct rohc_comp_ctxt *const context,
                                     const size_t comp_opt_max_len)
 	__attribute__((warn_unused_result, nonnull(1, 2, 3, 5)));
 
-static int c_tcp_build_sack_perm_list_item(const struct rohc_comp_ctxt *const context,
-                                           const struct tcphdr *const tcp,
-                                           const uint8_t *const uncomp_opt,
-                                           const uint8_t uncomp_opt_len,
-                                           uint8_t *const comp_opt,
-                                           const size_t comp_opt_max_len)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 5)));
-
-static int c_tcp_build_sack_list_item(const struct rohc_comp_ctxt *const context,
-                                      const struct tcphdr *const tcp,
-                                      const uint8_t *const uncomp_opt,
-                                      const uint8_t uncomp_opt_len,
-                                      uint8_t *const comp_opt,
-                                      const size_t comp_opt_max_len)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 5)));
-
 static int c_tcp_build_generic_list_item(const struct rohc_comp_ctxt *const context,
                                          const struct tcphdr *const tcp,
                                          const uint8_t *const uncomp_opt,
@@ -182,12 +164,6 @@ static struct c_tcp_opt c_tcp_opts[MAX_TCP_OPTION_INDEX + 1] =
 	[TCP_INDEX_TS]        = { TCP_INDEX_TS, true, TCP_OPT_TS,
 	                          "Timestamps (TS)",
 	                          c_tcp_build_ts_list_item },
-	[TCP_INDEX_SACK_PERM] = { TCP_INDEX_SACK_PERM, true, TCP_OPT_SACK_PERM,
-	                          "Selective Acknowledgment Permitted (SACK)",
-	                          c_tcp_build_sack_perm_list_item },
-	[TCP_INDEX_SACK]      = { TCP_INDEX_SACK, true, TCP_OPT_SACK,
-	                          "Selective Acknowledgment (SACK)",
-	                          c_tcp_build_sack_list_item },
 	[TCP_INDEX_GENERIC7]  = { TCP_INDEX_GENERIC7, false, 0,
 	                          "generic index 7",
 	                          c_tcp_build_generic_list_item },
@@ -230,8 +206,6 @@ static int c_tcp_type2index[TCP_LIST_ITEM_MAP_LEN] =
 	TCP_INDEX_NOP,             // TCP_OPT_NOP             1
 	TCP_INDEX_MSS,             // TCP_OPT_MAXSEG          2
 	TCP_INDEX_WS,              // TCP_OPT_WINDOW          3
-	TCP_INDEX_SACK_PERM,       // TCP_OPT_SACK_PERMITTED  4
-	TCP_INDEX_SACK,            // TCP_OPT_SACK            5
 	-1,                        // TODO ?                  6
 	-1,                        // TODO ?                  7
 	TCP_INDEX_TS,              // TCP_OPT_TIMESTAMP       8
@@ -259,8 +233,6 @@ static int c_tcp_type2index[TCP_LIST_ITEM_MAP_LEN] =
  * The following well-known TCP options shall have expected lengthes:
  *  - MSS shall be TCP_OLEN_MSS long,
  *  - WS shall be TCP_OLEN_WS long,
- *  - SACK Permitted shall be TCP_OLEN_SACK_PERM long,
- *  - SACK shall be 2 + N * 8 with N in range [1, 4]
  *  - TS shall be TCP_OLEN_TS long.
  *
  * @param comp         The ROHC compressor
@@ -365,35 +337,6 @@ bool rohc_comp_tcp_are_options_acceptable(const struct rohc_comp *const comp,
 					           "malformed TCP option #%zu: unexpected length for WS "
 					           "option: %u found in packet while %u expected",
 					           opt_pos + 1, opt_len, TCP_OLEN_WS);
-					goto bad_opts;
-				}
-				break;
-			}
-			case TCP_OPT_SACK_PERM:
-			{
-				if(opt_len != TCP_OLEN_SACK_PERM)
-				{
-					rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-					           "malformed TCP option #%zu: unexpected length for SACK "
-					           "Permitted option: %u found in packet while %u expected",
-					           opt_pos + 1, opt_len, TCP_OLEN_SACK_PERM);
-					goto bad_opts;
-				}
-				break;
-			}
-			case TCP_OPT_SACK:
-			{
-				size_t sack_blocks_remain = (opt_len - 2) % sizeof(sack_block_t);
-				size_t sack_blocks_nr = (opt_len - 2) / sizeof(sack_block_t);
-				if(sack_blocks_remain != 0 ||
-				   sack_blocks_nr == 0 ||
-				   sack_blocks_nr > TCP_SACK_BLOCKS_MAX_NR)
-				{
-					rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-					           "malformed TCP option #%zu: unexpected length for "
-					           "SACK option: %u found in packet while 2 + [1-4] "
-					           "* %zu expected", opt_pos + 1, opt_len,
-					           sizeof(sack_block_t));
 					goto bad_opts;
 				}
 				break;
@@ -868,7 +811,6 @@ int c_tcp_code_tcp_opts_irreg(const struct rohc_comp_ctxt *const context,
 	size_t opt_pos;
 
 	bool is_ok;
-	int ret;
 
 	rohc_comp_debug(context, "irregular chain: encode irregular content for all "
 	                "TCP options");
@@ -954,30 +896,9 @@ int c_tcp_code_tcp_opts_irreg(const struct rohc_comp_ctxt *const context,
 			c_add_wlsb(&opts_ctxt->ts_req_wlsb, msn, rohc_ntoh32(opt_ts->ts));
 			c_add_wlsb(&opts_ctxt->ts_reply_wlsb, msn, rohc_ntoh32(opt_ts->ts_reply));
 		}
-		else if(opt_type == TCP_OPT_SACK)
-		{
-			const sack_block_t *const sack_blocks =
-				(sack_block_t *) (opts + opts_offset + 2);
-			const bool is_sack_unchanged =
-				!c_tcp_opt_changed(opts_ctxt, opt_idx, opts + opts_offset, opt_len);
-
-			assert(opt_len > 2);
-			ret = c_tcp_opt_sack_code(context, rohc_ntoh32(tcp->ack_num),
-			                          sack_blocks, opt_len - 2, is_sack_unchanged,
-			                          rohc_remain_data, rohc_remain_len);
-			if(ret < 0)
-			{
-				rohc_comp_warn(context, "failed to encode TCP option SACK");
-				goto error;
-			}
-			rohc_remain_data += ret;
-			rohc_remain_len -= ret;
-			comp_opt_len += ret;
-		}
 		else if(opt_type != TCP_OPT_EOL &&
 		        opt_type != TCP_OPT_NOP &&
-		        opt_type != TCP_OPT_WS &&
-		        opt_type != TCP_OPT_SACK_PERM)
+		        opt_type != TCP_OPT_WS)
 		{
 			/* generic encoding */
 			/* TODO: in what case option_static could be set to 1 ? */
@@ -1160,13 +1081,6 @@ static void c_tcp_opt_trace(const struct rohc_comp_ctxt *const context,
 			                opt_len);
 			break;
 		}
-		case TCP_OPT_SACK:
-		{
-			const size_t sack_blocks_nr = (opt_len - 2) % sizeof(sack_block_t);
-			rohc_comp_debug(context, "TCP option %s = %zu blocks", opt_descr,
-			                sack_blocks_nr);
-			break;
-		}
 		case TCP_OPT_TS:
 		{
 			const struct tcp_option_timestamp *const opt_ts =
@@ -1181,7 +1095,6 @@ static void c_tcp_opt_trace(const struct rohc_comp_ctxt *const context,
 			break;
 		}
 		case TCP_OPT_NOP:
-		case TCP_OPT_SACK_PERM:
 		{
 			rohc_comp_debug(context, "TCP option %s", opt_descr);
 			break;
@@ -1438,10 +1351,9 @@ bool c_tcp_is_list_item_needed(const struct rohc_comp_ctxt *const context,
 		                "be transmitted", tcp_opt_get_descr(opt_type));
 		item_needed = true;
 	}
-	else if(chain_type == ROHC_TCP_CHAIN_CO &&
-	        (opt_idx == TCP_INDEX_NOP || opt_idx == TCP_INDEX_SACK_PERM))
+	else if(chain_type == ROHC_TCP_CHAIN_CO && opt_idx == TCP_INDEX_NOP)
 	{
-		/* in CO headers, NOP and SACK Permitted options have empty items,
+		/* in CO headers, NOP Permitted options have empty items,
 		 * so transmitting them is useless */
 		rohc_comp_debug(context, "TCP options list: option '%s' is not transmitted "
 		                "because transmitting an empty item is useless",
@@ -1657,63 +1569,6 @@ static int c_tcp_build_ts_list_item(const struct rohc_comp_ctxt *const context,
 error:
 	return -1;
 }
-
-
-/**
- * @brief Build the list item for the TCP SACK Permitted option
- *
- * @param context           The compression context
- * @param tcp               The TCP header
- * @param uncomp_opt        The uncompressed TCP option to compress
- * @param uncomp_opt_len    The length of the uncompressed TCP option to compress
- * @param[out] comp_opt     The compressed TCP option
- * @param comp_opt_max_len  The max remaining length in the ROHC buffer
- * @return                  The length (in bytes) of compressed TCP option
- *                          in case of success, -1 in case of failure
- */
-static int c_tcp_build_sack_perm_list_item(const struct rohc_comp_ctxt *const context __attribute__((unused)),
-                                           const struct tcphdr *const tcp __attribute__((unused)),
-                                           const uint8_t *const uncomp_opt __attribute__((unused)),
-                                           const uint8_t uncomp_opt_len __attribute__((unused)),
-                                           uint8_t *const comp_opt __attribute__((unused)),
-                                           const size_t comp_opt_max_len __attribute__((unused)))
-{
-	/* SACK Permitted list item is empty */
-	return 0;
-}
-
-
-/**
- * @brief Build the list item for the TCP SACK option
- *
- * See RFC4996 page 67.
- *
- * @param context           The compression context
- * @param tcp               The TCP header
- * @param uncomp_opt        The uncompressed TCP option to compress
- * @param uncomp_opt_len    The length of the uncompressed TCP option to compress
- * @param[out] comp_opt     The compressed TCP option
- * @param comp_opt_max_len  The max remaining length in the ROHC buffer
- * @return                  The length (in bytes) of compressed TCP option
- *                          in case of success, -1 in case of failure
- */
-static int c_tcp_build_sack_list_item(const struct rohc_comp_ctxt *const context,
-                                      const struct tcphdr *const tcp,
-                                      const uint8_t *const uncomp_opt,
-                                      const uint8_t uncomp_opt_len,
-                                      uint8_t *const comp_opt,
-                                      const size_t comp_opt_max_len)
-{
-	const sack_block_t *const opt_sack = (sack_block_t *) (uncomp_opt + 2);
-	const bool is_sack_unchanged = false; /* unchanged encoding is only supported
-	                                         by irregular chain */
-
-	assert(uncomp_opt_len > 2);
-	return c_tcp_opt_sack_code(context, rohc_ntoh32(tcp->ack_num),
-	                           opt_sack, uncomp_opt_len - 2, is_sack_unchanged,
-	                           comp_opt, comp_opt_max_len);
-}
-
 
 /**
  * @brief Build the list item for the TCP generic option

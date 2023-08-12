@@ -34,7 +34,6 @@
 #include "tcp.h"
 #include "decomp_wlsb.h"
 #include "tcp_ts.h"
-#include "tcp_sack.h"
 
 #include <stdint.h>
 
@@ -137,7 +136,6 @@ struct d_tcp_opt_ctxt /* TODO: doxygen */
 			struct rohc_lsb_field32 req;  /**< The context for the TS request field */
 			struct rohc_lsb_field32 rep;  /**< The context for the TS reply field */
 		} ts;
-		struct d_tcp_opt_sack sack; /* TODO: ptr inside is not needed */
 		struct
 		{
 			enum
@@ -219,8 +217,6 @@ struct d_tcp_context
 	/* TCP TS option */
 	struct rohc_lsb_decode opt_ts_req_lsb_ctxt;
 	struct rohc_lsb_decode opt_ts_rep_lsb_ctxt;
-	/* TCP SACK option */
-	struct d_tcp_opt_sack opt_sack_blocks;  /**< The TCP SACK blocks */
 
 	size_t ip_contexts_nr;
 	ip_context_t ip_contexts[ROHC_TCP_MAX_IP_HDRS];
@@ -398,8 +394,6 @@ struct rohc_tcp_decoded_values
 	/* TCP TS option */
 	uint32_t opt_ts_req;  /**< The echo request value of the TCP TS option */
 	uint32_t opt_ts_rep;  /**< The echo reply value of the TCP TS option */
-	/* TCP SACK option */
-	struct d_tcp_opt_sack opt_sack_blocks;  /**< The TCP SACK blocks */
 };
 
 #endif /* ROHC_DECOMP_TCP_DEFINES_H */

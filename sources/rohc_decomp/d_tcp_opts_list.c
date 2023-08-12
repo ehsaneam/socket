@@ -32,7 +32,6 @@
 #include "tcp.h"
 #include "rohc_bit_ops.h"
 #include "rohc_utils.h"
-#include "tcp_sack.h"
 
 #include "config.h" /* for ROHC_RFC_STRICT_DECOMPRESSOR */
 
@@ -180,42 +179,6 @@ static bool d_tcp_build_ts(const struct rohc_decomp_ctxt *const context,
                            size_t *const opt_len)
 	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4, 5)));
 
-static int d_tcp_parse_sack_perm_list_item(const struct rohc_decomp_ctxt *const context,
-                                           const uint8_t *const data,
-                                           const size_t data_len,
-                                           struct d_tcp_opt_ctxt *const opt_ctxt)
-	__attribute__((warn_unused_result, nonnull(1, 2, 4)));
-static int d_tcp_parse_sack_perm_irreg(const struct rohc_decomp_ctxt *const context,
-                                       const uint8_t *const data,
-                                       const size_t data_len,
-                                       const uint8_t opt_index,
-                                       struct d_tcp_opt_ctxt *const opt_ctxt)
-	__attribute__((warn_unused_result, nonnull(1, 2, 5)));
-static bool d_tcp_build_sack_perm(const struct rohc_decomp_ctxt *const context,
-                                  const struct rohc_tcp_decoded_values *const decoded,
-                                  const struct d_tcp_opt_ctxt *const tcp_opt,
-                                  struct rohc_buf *const uncomp_packet,
-                                  size_t *const opt_len)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4, 5)));
-
-static int d_tcp_parse_sack_list_item(const struct rohc_decomp_ctxt *const context,
-                                      const uint8_t *const data,
-                                      const size_t data_len,
-                                      struct d_tcp_opt_ctxt *const opt_ctxt)
-	__attribute__((warn_unused_result, nonnull(1, 2, 4)));
-static int d_tcp_parse_sack_irreg(const struct rohc_decomp_ctxt *const context,
-                                  const uint8_t *const data,
-                                  const size_t data_len,
-                                  const uint8_t opt_index,
-                                  struct d_tcp_opt_ctxt *const opt_ctxt)
-	__attribute__((warn_unused_result, nonnull(1, 2, 5)));
-static bool d_tcp_build_sack(const struct rohc_decomp_ctxt *const context,
-                             const struct rohc_tcp_decoded_values *const decoded,
-                             const struct d_tcp_opt_ctxt *const tcp_opt,
-                             struct rohc_buf *const uncomp_packet,
-                             size_t *const opt_len)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 4, 5)));
-
 static int d_tcp_parse_generic_list_item(const struct rohc_decomp_ctxt *const context,
                                          const uint8_t *const data,
                                          const size_t data_len,
@@ -254,14 +217,6 @@ static struct d_tcp_opt d_tcp_opts[MAX_TCP_OPTION_INDEX + 1] =
 	                          "Timestamps (TS)",
 	                          d_tcp_parse_ts_list_item, d_tcp_parse_ts_irreg,
 	                          d_tcp_build_ts },
-	[TCP_INDEX_SACK_PERM] = { TCP_INDEX_SACK_PERM, true, TCP_OPT_SACK_PERM,
-	                          "Selective Acknowledgment Permitted (SACK)",
-	                          d_tcp_parse_sack_perm_list_item, d_tcp_parse_sack_perm_irreg,
-	                          d_tcp_build_sack_perm },
-	[TCP_INDEX_SACK]      = { TCP_INDEX_SACK, true, TCP_OPT_SACK,
-	                          "Selective Acknowledgment (SACK)",
-	                          d_tcp_parse_sack_list_item, d_tcp_parse_sack_irreg,
-	                          d_tcp_build_sack },
 	[TCP_INDEX_GENERIC7]  = { TCP_INDEX_GENERIC7, false, 0,
 	                          "generic index 7",
 	                          d_tcp_parse_generic_list_item, d_tcp_parse_generic_irreg,
@@ -989,147 +944,6 @@ static bool d_tcp_build_ts(const struct rohc_decomp_ctxt *const context,
 error:
 	return false;
 }
-
-
-/* TODO */
-static int d_tcp_parse_sack_perm_list_item(const struct rohc_decomp_ctxt *const context __attribute__((unused)),
-                                           const uint8_t *const data __attribute__((unused)),
-                                           const size_t data_len __attribute__((unused)),
-                                           struct d_tcp_opt_ctxt *const opt_ctxt __attribute__((unused)))
-{
-	return 0;
-}
-
-
-/* TODO */
-static int d_tcp_parse_sack_perm_irreg(const struct rohc_decomp_ctxt *const context __attribute__((unused)),
-                                       const uint8_t *const data __attribute__((unused)),
-                                       const size_t data_len __attribute__((unused)),
-                                       const uint8_t opt_index __attribute__((unused)),
-                                       struct d_tcp_opt_ctxt *const opt_ctxt __attribute__((unused)))
-{
-	return 0;
-}
-
-
-/* TODO */
-static bool d_tcp_build_sack_perm(const struct rohc_decomp_ctxt *const context,
-                                  const struct rohc_tcp_decoded_values *const decoded __attribute__((unused)),
-                                  const struct d_tcp_opt_ctxt *const tcp_opt __attribute__((unused)),
-                                  struct rohc_buf *const uncomp_packet,
-                                  size_t *const opt_len)
-{
-	const size_t sack_perm_len = 2;
-
-	if(rohc_buf_avail_len(*uncomp_packet) < sack_perm_len)
-	{
-		rohc_decomp_warn(context, "output buffer too small for the %zu-byte "
-		                 "TCP SACK Permitted option", sack_perm_len);
-		goto error;
-	}
-
-	rohc_buf_byte_at(*uncomp_packet, 0) = TCP_OPT_SACK_PERM;
-	rohc_buf_byte_at(*uncomp_packet, 1) = sack_perm_len;
-	uncomp_packet->len += sack_perm_len;
-	*opt_len = sack_perm_len;
-
-	return true;
-
-error:
-	return false;
-}
-
-
-/* TODO */
-static int d_tcp_parse_sack_list_item(const struct rohc_decomp_ctxt *const context,
-                                      const uint8_t *const data,
-                                      const size_t data_len,
-                                      struct d_tcp_opt_ctxt *const opt_ctxt)
-{
-	int ret;
-
-	/* parse the SACK blocks */
-	ret = d_tcp_sack_parse(context, data, data_len, &opt_ctxt->data.sack);
-	if(ret < 0)
-	{
-		rohc_decomp_warn(context, "malformed ROHC packet: malformed TCP option "
-		                 "items: failed to parse TCP SACK option");
-		goto error;
-	}
-
-	/* unchanged encoding is only accepted in irregular chain */
-	if(opt_ctxt->data.sack.blocks_nr == 0)
-	{
-		rohc_decomp_warn(context, "malformed ROHC packet: malformed TCP option "
-		                 "items: encoding with no SACK block is only allowed in "
-		                 "the irregular chain");
-		goto error;
-	}
-
-	return ret;
-
-error:
-	return -1;
-}
-
-
-/* TODO */
-static int d_tcp_parse_sack_irreg(const struct rohc_decomp_ctxt *const context,
-                                  const uint8_t *const data,
-                                  const size_t data_len,
-                                  const uint8_t opt_index __attribute__((unused)),
-                                  struct d_tcp_opt_ctxt *const opt_ctxt)
-{
-	int ret;
-
-	/* parse the SACK blocks */
-	ret = d_tcp_sack_parse(context, data, data_len, &opt_ctxt->data.sack);
-	if(ret < 0)
-	{
-		rohc_decomp_warn(context, "malformed ROHC packet: malformed TCP option "
-		                 "items: failed to parse TCP SACK option");
-		goto error;
-	}
-
-	return ret;
-
-error:
-	return -1;
-
-}
-
-
-/* TODO */
-static bool d_tcp_build_sack(const struct rohc_decomp_ctxt *const context,
-                             const struct rohc_tcp_decoded_values *const decoded,
-                             const struct d_tcp_opt_ctxt *const tcp_opt __attribute__((unused)),
-                             struct rohc_buf *const uncomp_packet,
-                             size_t *const opt_len)
-{
-	const sack_block_t *const blocks = decoded->opt_sack_blocks.blocks;
-	const size_t blocks_nr = decoded->opt_sack_blocks.blocks_nr;
-	const size_t blocks_len = sizeof(sack_block_t) * blocks_nr;
-	const size_t sack_len = 2 + blocks_len;
-
-	if(rohc_buf_avail_len(*uncomp_packet) < sack_len)
-	{
-		rohc_decomp_warn(context, "output buffer too small for the %zu-byte "
-		                 "TCP SACK option", sack_len);
-		goto error;
-	}
-
-	rohc_buf_byte_at(*uncomp_packet, 0) = TCP_OPT_SACK;
-	rohc_buf_byte_at(*uncomp_packet, 1) = sack_len;
-	uncomp_packet->len += 2;
-	rohc_buf_append(uncomp_packet, (uint8_t *) blocks, blocks_len);
-	*opt_len = sack_len;
-
-	return true;
-
-error:
-	return false;
-}
-
 
 /* TODO */
 static int d_tcp_parse_generic_list_item(const struct rohc_decomp_ctxt *const context,
