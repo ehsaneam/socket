@@ -33,7 +33,7 @@
 #include "interval.h"
 #include "tcp.h"
 #include "decomp_wlsb.h"
-#include "tcp_ts.h"
+#include "rohc.h"
 
 #include <stdint.h>
 

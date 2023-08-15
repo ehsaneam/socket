@@ -42,7 +42,6 @@
 #include "sdvl.h"
 #include "rfc4996.h"
 #include "decomp_wlsb.h"
-#include "tcp_ts.h"
 #include "tcp.h"
 #include "ip_numbers.h"
 #include "crc.h"
