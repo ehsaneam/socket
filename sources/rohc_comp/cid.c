@@ -25,7 +25,6 @@
  */
 
 #include "cid.h"
-#include "sdvl.h"
 
 #include <stdint.h>
 #include <assert.h>

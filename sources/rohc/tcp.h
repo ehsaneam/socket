@@ -102,49 +102,6 @@ struct tcphdr
 #define RSF_FIN_ONLY  0x01
 #define RSF_NONE      0x00
 
-
-
-/************************************************************************
- * Uncompressed TCP options                                             *
- ************************************************************************/
-
-/**
- * @brief The different chains used by the TCP profile
- */
-typedef enum
-{
-	ROHC_TCP_CHAIN_STATIC    = 0,  /**< The TCP static chain */
-	ROHC_TCP_CHAIN_DYNAMIC   = 1,  /**< The TCP dynamic chain */
-	ROHC_TCP_CHAIN_REPLICATE = 2,  /**< The TCP replicate chain */
-	ROHC_TCP_CHAIN_IRREGULAR = 3,  /**< The TCP irregular chain */
-	ROHC_TCP_CHAIN_CO        = 4,  /**< Not a chain, but in CO packet */
-
-} rohc_tcp_chain_t;
-
-#define TCP_INDEX_NOP          0U
-#define TCP_INDEX_EOL          1U
-#define TCP_INDEX_MSS          2U
-#define TCP_INDEX_WS           3U
-#define TCP_INDEX_TS           4U
-#define TCP_INDEX_GENERIC7     7U
-#define TCP_INDEX_GENERIC8     8U
-#define TCP_INDEX_GENERIC9     9U
-#define TCP_INDEX_GENERIC10   10U
-#define TCP_INDEX_GENERIC11   11U
-#define TCP_INDEX_GENERIC12   12U
-#define TCP_INDEX_GENERIC13   13U
-#define TCP_INDEX_GENERIC14   14U
-#define TCP_INDEX_GENERIC15   15U
-
-/** The Timestamp option of the TCP header */
-struct tcp_option_timestamp
-{
-	uint32_t ts;        /**< The timestamp value */
-	uint32_t ts_reply;  /**< The timestamp echo reply value */
-} __attribute__((packed));
-
-
-
 /************************************************************************
  * Compressed IPv4 header                                               *
  ************************************************************************/

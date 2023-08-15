@@ -37,15 +37,6 @@
 
 #include <stdint.h>
 
-/** The decompression context for one IP extension header */
-typedef struct
-{
-	size_t len;        /**< The length (in bytes) of the extension header */
-	uint8_t proto;     /**< The protocol of the extension header */
-	uint8_t nh_proto;  /**< The protocol of the next header */
-} ip_option_context_t;
-
-
 /**
  * @brief Define the common IP header context to IPv4 and IPv6.
  */

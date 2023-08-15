@@ -37,7 +37,6 @@
 #include "rohc_bit_ops.h"
 #include "cid.h"
 #include "ip_id_offset.h"
-#include "sdvl.h"
 #include "crc.h"
 
 #include <stdint.h>

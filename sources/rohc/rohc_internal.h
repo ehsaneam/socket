@@ -118,9 +118,7 @@
  * </dl>
  */
 
-
 #include "rohc.h"
-
 
 /**
  * @brief The padding field defined by the ROHC protocol
@@ -138,7 +136,6 @@
 \endverbatim
  */
 #define ROHC_PADDING_BYTE  0xe0
-
 
 /**
  * @brief ROHC medium (CID characteristics)

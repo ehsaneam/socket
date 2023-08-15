@@ -39,7 +39,6 @@
 #include "rohc_traces_internal.h"
 #include "rohc_utils.h"
 #include "rohc_debug.h"
-#include "sdvl.h"
 #include "rfc4996.h"
 #include "decomp_wlsb.h"
 #include "tcp.h"

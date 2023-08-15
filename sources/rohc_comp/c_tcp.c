@@ -40,7 +40,6 @@
 #include "cid.h"
 #include "ip_id_offset.h"
 #include "rfc4996.h"
-#include "sdvl.h"
 #include "crc.h"
 #include "rohc_bit_ops.h"
 #include "c_tcp_defines.h"
@@ -2026,10 +2025,6 @@ static int c_tcp_build_rnd_8(const struct rohc_comp_ctxt *const context,
 	/* ACK number */
 	rnd8->ack_num = rohc_hton16(rohc_ntoh32(tcp->ack_num) & 0xffff);
 
-	/* the structure of the list of TCP options didn't change */
-	rohc_comp_debug(context, "compressed list of TCP options: list not present");
-	rnd8->list_present = 0;
-
 	return sizeof(rnd_8_t);
 
 error:
@@ -2538,10 +2533,6 @@ static int c_tcp_build_seq_8(const struct rohc_comp_ctxt *const context,
 	rohc_comp_debug(context, "seq_number = 0x%04x (0x%02x 0x%02x)",
 	                seq_num, seq8->seq_num1, seq8->seq_num2);
 
-	/* the structure of the list of TCP options didn't change */
-	rohc_comp_debug(context, "compressed list of TCP options: list not present");
-	seq8->list_present = 0;
-
 	return sizeof(seq_8_t);
 
 error:
@@ -2815,7 +2806,6 @@ static int c_tcp_build_co_common(const struct rohc_comp_ctxt *const context,
 	co_common->reserved = 0;
 
 	/* the structure of the list of TCP options didn't change */
-	rohc_comp_debug(context, "compressed list of TCP options: list not present");
 	co_common->list_present = 0;
 
 	// =:= crc7(THIS.UVALUE,THIS.ULENGTH) [ 7 ];

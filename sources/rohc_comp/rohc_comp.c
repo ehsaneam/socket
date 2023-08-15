@@ -47,7 +47,6 @@
 #include "rohc_time_internal.h"
 #include "rohc_debug.h"
 #include "rohc_utils.h"
-#include "sdvl.h"
 #include "rohc_add_cid.h"
 #include "rohc_bit_ops.h"
 #include "ip.h"

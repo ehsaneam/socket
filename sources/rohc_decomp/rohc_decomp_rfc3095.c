@@ -37,7 +37,6 @@
 #include "rohc_decomp_internals.h"
 #include "rohc_decomp_detect_packet.h"
 #include "decomp_wlsb.h"
-#include "sdvl.h"
 #include "crc.h"
 
 #include "config.h" /* for WORDS_BIGENDIAN definition */

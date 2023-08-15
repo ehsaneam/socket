@@ -191,8 +191,6 @@ typedef enum
 
 } rohc_profile_t;
 
-
-
 /*
  * Prototypes of public functions
  */
@@ -208,8 +206,6 @@ const char * ROHC_EXPORT rohc_get_mode_descr(const rohc_mode_t mode)
 
 const char * ROHC_EXPORT rohc_get_profile_descr(const rohc_profile_t profile)
 	__attribute__((warn_unused_result, const));
-
-
 
 #undef ROHC_EXPORT /* do not pollute outside this header */
 

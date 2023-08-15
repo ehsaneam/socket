@@ -44,7 +44,6 @@
 #include "rohc_utils.h"
 #include "rohc_bit_ops.h"
 #include "rohc_debug.h"
-#include "sdvl.h"
 #include "rohc_add_cid.h"
 #include "rohc_decomp_detect_packet.h"
 #include "crc.h"
