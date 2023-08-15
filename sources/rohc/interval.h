@@ -58,49 +58,6 @@ typedef enum
 	ROHC_LSB_SHIFT_TCP_TS_4B  = 0x04000000, /**< real value for TCP TS */
 } rohc_lsb_shift_t;
 
-
-/**
- * @brief An interval of 8-bit values
- *
- * Lower and upper bound values are always included in the interval.
- *
- * The upper bound may be greater that the lower bound of the interval if the
- * interval straddles the interval boundaries.
- *
- * Example of interval that does not straddle field boundaries:
- *   [1, 3]
- *
- * Example of interval that straddles field boundaries (8-bit field):
- *   [250, 4]
- */
-struct rohc_interval8
-{
-	uint8_t min;  /**< The lower bound of the interval */
-	uint8_t max;  /**< The upper bound of the interval */
-};
-
-
-/**
- * @brief An interval of 16-bit values
- *
- * Lower and upper bound values are always included in the interval.
- *
- * The upper bound may be greater that the lower bound of the interval if the
- * interval straddles the interval boundaries.
- *
- * Example of interval that does not straddle field boundaries:
- *   [1, 3]
- *
- * Example of interval that straddles field boundaries (16-bit field):
- *   [65530, 4]
- */
-struct rohc_interval16
-{
-	uint16_t min;  /**< The lower bound of the interval */
-	uint16_t max;  /**< The upper bound of the interval */
-};
-
-
 /**
  * @brief An interval of 32-bit values
  *

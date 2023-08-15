@@ -188,8 +188,6 @@ struct rohc_comp
 	/** The maximal delay spent in > FO states (= SO state) before changing back
 	 *  the state to FO (periodic refreshes) */
 	uint64_t periodic_refreshes_fo_timeout_time;
-	/** The connection type (currently not used) */
-	int connection_type;
 	/** The number of uncompressed transmissions for list compression (L) */
 	size_t list_trans_nr;
 
