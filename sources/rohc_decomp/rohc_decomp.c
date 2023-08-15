@@ -1090,7 +1090,7 @@ static rohc_status_t rohc_decomp_decode_pkt(struct rohc_decomp *const decomp,
 		goto error_malformed;
 	}
 
-	/* ROHC base header and its optional extension is now fully parsed,
+	/* ROHC base header is now fully parsed,
 	 * remaining data is the payload */
 	payload_data = rohc_buf_data(rohc_packet) + rohc_hdr_len;
 	payload_len = rohc_packet.len - rohc_hdr_len;

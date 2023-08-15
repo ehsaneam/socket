@@ -312,7 +312,6 @@ static int tcp_code_dynamic_tcp_part(const struct rohc_comp_ctxt *const context,
                                      const size_t rohc_max_len)
 {
 	struct sc_tcp_context *const tcp_context = context->specific;
-	const size_t min_tcp_hdr_len = sizeof(struct tcphdr) / sizeof(uint32_t);
 
 	uint8_t *rohc_remain_data = rohc_data;
 	size_t rohc_remain_len = rohc_max_len;
@@ -437,43 +436,19 @@ static int tcp_code_dynamic_tcp_part(const struct rohc_comp_ctxt *const context,
 		                tcp_dynamic->ack_stride_flag ? "" : "not ");
 	}
 
-	/* list of TCP options */
-	if(tcp->data_offset == min_tcp_hdr_len)
-	{
-		rohc_comp_debug(context, "TCP no options!");
+	rohc_comp_debug(context, "TCP no options!");
 
-		/* see RFC4996, §6.3.3 : no XI items, PS = 0, m = 0 */
-		if(rohc_remain_len < 1)
-		{
-			rohc_comp_warn(context, "ROHC buffer too small for the TCP dynamic part: "
-			               "1 byte required for empty list of TCP option, but only "
-			               "%zu bytes available", rohc_remain_len);
-			goto error;
-		}
-		rohc_remain_data[0] = 0x00;
-		rohc_remain_data++;
-		rohc_remain_len--;
-	}
-	else
+	/* see RFC4996, §6.3.3 : no XI items, PS = 0, m = 0 */
+	if(rohc_remain_len < 1)
 	{
-		bool no_item_needed;
-
-		ret = c_tcp_code_tcp_opts_list_item(context, tcp, tcp_context->msn,
-		                                    ROHC_TCP_CHAIN_DYNAMIC,
-		                                    &tcp_context->tcp_opts,
-		                                    rohc_remain_data, rohc_remain_len,
-		                                    &no_item_needed);
-		if(ret < 0)
-		{
-			rohc_comp_warn(context, "failed to encode the list of TCP options "
-			               "in the dynamic chain");
-			goto error;
-		}
-#ifndef __clang_analyzer__ /* silent warning about dead in/decrement */
-		rohc_remain_data += ret;
-#endif
-		rohc_remain_len -= ret;
+		rohc_comp_warn(context, "ROHC buffer too small for the TCP dynamic part: "
+						"1 byte required for empty list of TCP option, but only "
+						"%zu bytes available", rohc_remain_len);
+		goto error;
 	}
+	rohc_remain_data[0] = 0x00;
+	rohc_remain_data++;
+	rohc_remain_len--;
 
 	rohc_comp_dump_buf(context, "TCP dynamic part", rohc_data,
 	                   rohc_max_len - rohc_remain_len);

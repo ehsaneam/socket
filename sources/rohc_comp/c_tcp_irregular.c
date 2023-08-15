@@ -276,7 +276,6 @@ static int tcp_code_irregular_tcp_part(const struct rohc_comp_ctxt *const contex
 	struct sc_tcp_context *const tcp_context = context->specific;
 	uint8_t *rohc_remain_data = rohc_data;
 	size_t rohc_remain_len = rohc_max_len;
-	int ret;
 
 	/* ip_ecn_flags = := tcp_irreg_ip_ecn(ip_inner_ecn)
 	 * tcp_res_flags =:= static_or_irreg(ecn_used.CVALUE,4)
@@ -312,22 +311,8 @@ static int tcp_code_irregular_tcp_part(const struct rohc_comp_ctxt *const contex
 	rohc_comp_debug(context, "add TCP checksum = 0x%04x",
 	                rohc_ntoh16(tcp->checksum));
 
-	/* irregular part for TCP options */
-	ret = c_tcp_code_tcp_opts_irreg(context, tcp, tcp_context->msn,
-		                             &tcp_context->tcp_opts, rohc_remain_data,
-		                             rohc_remain_len);
-	if(ret < 0)
-	{
-		rohc_comp_warn(context, "failed to compress TCP options in irregular chain");
-		goto error;
-	}
-#ifndef __clang_analyzer__ /* silent warning about dead in/decrement */
-	rohc_remain_data += ret;
-#endif
-	rohc_remain_len -= ret;
-
 	rohc_comp_dump_buf(context, "TCP irregular part", rohc_data,
-	                   rohc_max_len - rohc_remain_len);
+					rohc_max_len - rohc_remain_len);
 
 	return (rohc_max_len - rohc_remain_len);
 

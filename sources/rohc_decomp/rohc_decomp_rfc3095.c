@@ -1509,9 +1509,7 @@ static bool parse_uor2(const struct rohc_decomp_ctxt *const context,
 	rohc_remain_len -= large_cid_len;
 	*rohc_hdr_len += large_cid_len;
 
-	/* part 4: 1-bit X (extension) flag + 7-bit CRC */
-	bits->ext_flag = GET_REAL(GET_BIT_7(rohc_remain_data));
-	rohc_decomp_debug(context, "extension is present = %u", bits->ext_flag);
+	/* part 4: 7-bit CRC */
 	extr_crc->type = ROHC_CRC_TYPE_7;
 	extr_crc->bits = GET_BIT_0_6(rohc_remain_data);
 	extr_crc->bits_nr = 7;
@@ -1521,12 +1519,6 @@ static bool parse_uor2(const struct rohc_decomp_ctxt *const context,
 	rohc_remain_len--;
 	(*rohc_hdr_len)++;
 
-	/* part 5: Extension */
-	if(bits->ext_flag == 0)
-	{
-		/* no extension */
-		rohc_decomp_debug(context, "no extension to decode in UOR-2 packet");
-	}
 	/* parts 6, 9, and 13: UO* remainder */
 	if(!parse_uo_remainder(context, rohc_remain_data, rohc_remain_len, bits,
 	                       &rohc_remainder_len))

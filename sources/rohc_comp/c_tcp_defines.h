@@ -30,7 +30,6 @@
 #define ROHC_DECOMP_TCP_DEFINES_H
 
 #include "tcp.h"
-#include "c_tcp_opts_list.h"
 
 /**
  * @brief Define the TCP-specific temporary variables in the profile
@@ -43,9 +42,6 @@
  */
 struct tcp_tmp_variables
 {
-	/** The new number of IP extensions headers (for every IP header) */
-	size_t ip_exts_nr[ROHC_TCP_MAX_IP_HDRS];
-
 	/* the length of the TCP payload (headers and options excluded) */
 	size_t payload_len;
 
@@ -222,9 +218,6 @@ struct sc_tcp_context
 	bool cr_tcp_window_present;
 	bool cr_tcp_urg_ptr_present;
 	bool cr_tcp_ack_num_present;
-
-	/** The compression context for TCP options */
-	struct c_tcp_opts_ctxt tcp_opts;
 
 	/// The previous TCP header
 	struct tcphdr old_tcphdr;

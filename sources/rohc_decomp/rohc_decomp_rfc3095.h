@@ -126,9 +126,6 @@ struct rohc_extr_bits
 	/** bits related to inner IP header */
 	struct rohc_extr_ip_bits inner_ip;
 
-	/* X (extension) flag */
-	uint8_t ext_flag:1;     /**< X (extension) flag */
-
 	/* Mode bits */
 	uint8_t mode:2;         /**< The Mode bits found in ROHC header */
 	size_t mode_nr;         /**< The number of Mode bits found in ROHC header */
