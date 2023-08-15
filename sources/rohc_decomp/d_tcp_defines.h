@@ -150,26 +150,6 @@ struct d_tcp_opt_ctxt /* TODO: doxygen */
 	} data;
 };
 
-
-/** The decompression context for TCP options */
-struct d_tcp_opts_ctxt
-{
-	/** The number of options in the list of TCP options */
-	size_t nr;
-
-	/** The structure of the list of TCP options */
-	uint8_t structure[ROHC_TCP_OPTS_MAX];
-	/** Whether the TCP options are expected in the dynamic part? */
-	bool expected_dynamic[ROHC_TCP_OPTS_MAX];
-	/** The TCP options that were found or not */
-	bool found[ROHC_TCP_OPTS_MAX];
-
-	/** The bits of TCP options extracted from the dynamic chain, the tail of
-	 * co_common/seq_8/rnd_8 packets, or the irregular chain */
-	struct d_tcp_opt_ctxt bits[MAX_TCP_OPTION_INDEX + 1];
-};
-
-
 /** Define the TCP part of the decompression profile context */
 struct d_tcp_context
 {
@@ -208,8 +188,6 @@ struct d_tcp_context
 	/** The URG pointer */
 	uint16_t urg_ptr;
 
-	/** The decoded values of TCP options */
-	struct d_tcp_opts_ctxt tcp_opts;
 	/* TCP TS option */
 	struct rohc_lsb_decode opt_ts_req_lsb_ctxt;
 	struct rohc_lsb_decode opt_ts_rep_lsb_ctxt;
@@ -302,10 +280,6 @@ struct rohc_tcp_extr_bits
 	uint16_t tcp_check;   /**< The TCP checksum bits found in dynamic chain of
 	                           IR/IR-DYN header or in irregular chain of CO header */
 	struct rohc_lsb_field16 urg_ptr;     /**< The TCP Urgent pointer bits */
-
-	/** The bits of TCP options extracted from the dynamic chain, the tail of
-	 * co_common/seq_8/rnd_8 packets, or the irregular chain */
-	struct d_tcp_opts_ctxt tcp_opts;
 };
 
 
@@ -374,12 +348,6 @@ struct rohc_tcp_decoded_values
 	uint16_t window;     /**< The TCP window */
 	uint16_t tcp_check;  /**< The TCP checksum */
 	uint16_t urg_ptr;    /**< The TCP Urgent pointer */
-
-	/** The decoded values of TCP options */
-	struct d_tcp_opts_ctxt tcp_opts;
-	/* TCP TS option */
-	uint32_t opt_ts_req;  /**< The echo request value of the TCP TS option */
-	uint32_t opt_ts_rep;  /**< The echo reply value of the TCP TS option */
 };
 
 #endif /* ROHC_DECOMP_TCP_DEFINES_H */

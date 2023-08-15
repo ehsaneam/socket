@@ -290,16 +290,6 @@ static void d_tcp_decode_bits_tcp_flags(const struct rohc_decomp_ctxt *const con
                                         const struct rohc_tcp_extr_bits *const bits,
                                         struct rohc_tcp_decoded_values *const decoded)
 	__attribute__((nonnull(1, 2, 3)));
-static bool d_tcp_decode_bits_tcp_opts(const struct rohc_decomp_ctxt *const context,
-                                       const struct rohc_tcp_extr_bits *const bits,
-                                       struct rohc_tcp_decoded_values *const decoded)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3)));
-static bool d_tcp_decode_opt_ts_field(const struct rohc_decomp_ctxt *const context,
-                                      const char *const descr,
-                                      const struct rohc_lsb_decode *const lsb_ctxt,
-                                      const struct rohc_lsb_field32 ts,
-                                      uint32_t *const ts_decoded)
-	__attribute__((warn_unused_result, nonnull(1, 2, 3, 5)));
 
 static bool d_tcp_build_ipv4_hdr(const struct rohc_decomp_ctxt *const context,
                                  const struct rohc_tcp_decoded_ip_values *const decoded,
@@ -388,8 +378,6 @@ static void d_tcp_create_from_ctxt(struct rohc_decomp_ctxt *const ctxt,
 	tcp_ctxt->ack_flag = base_tcp_ctxt->ack_flag;
 	tcp_ctxt->rsf_flags = base_tcp_ctxt->rsf_flags;
 	tcp_ctxt->urg_ptr = base_tcp_ctxt->urg_ptr;
-	memcpy(&tcp_ctxt->tcp_opts, &base_tcp_ctxt->tcp_opts,
-	       sizeof(struct d_tcp_opts_ctxt));
 	
 	tcp_ctxt->ip_contexts_nr = base_tcp_ctxt->ip_contexts_nr;
 	memcpy(&tcp_ctxt->ip_contexts, &base_tcp_ctxt->ip_contexts,
@@ -1152,7 +1140,6 @@ static bool d_tcp_parse_CO(const struct rohc_decomp_ctxt *const context,
 	tcp_ip_id_behavior_t innermost_ip_id_behavior;
 
 	bool has_opts_list;
-	size_t rohc_opts_len;
 
 	bool (*parse_co_pkt)(const struct rohc_decomp_ctxt *const context,
 	                     const uint8_t *const rohc_packet,
@@ -1294,29 +1281,6 @@ static bool d_tcp_parse_CO(const struct rohc_decomp_ctxt *const context,
 		                  "innermost IP-ID",
 		                  tcp_ip_id_behavior_get_descr(innermost_ip_id_behavior));
 	}
-
-	/* parse the compressed list of TCP options if present */
-	if(!has_opts_list)
-	{
-		size_t i;
-		rohc_decomp_debug(context, "no compressed list of TCP options found "
-		                  "after the ROHC base header");
-		/* same list as in previous packets, but reset the 'present' flags ; the
-		 * list might be updated by irregular chain later */
-		memcpy(&bits->tcp_opts, &tcp_context->tcp_opts, sizeof(struct d_tcp_opts_ctxt));
-		for(i = 0; i < ROHC_TCP_OPTS_MAX; i++)
-		{
-			bits->tcp_opts.expected_dynamic[i] = false;
-			bits->tcp_opts.found[i] = false;
-		}
-		rohc_opts_len = 0;
-	}
-	rohc_decomp_debug(context, "ROHC packet = header (%zu bytes) + options (%zu "
-	                  "bytes) = %zu bytes", *rohc_hdr_len, rohc_opts_len,
-	                  (*rohc_hdr_len) + rohc_opts_len);
-	rohc_remain_data += rohc_opts_len;
-	rohc_remain_len -= rohc_opts_len;
-	*rohc_hdr_len += rohc_opts_len;
 
 	/* parse irregular chain */
 	{
@@ -2660,16 +2624,6 @@ static void d_tcp_reset_extr_bits(const struct rohc_decomp_ctxt *const context,
 	bits->rsf_flags_bits_nr = 0;
 	bits->window.bits_nr = 0;
 	bits->urg_ptr.bits_nr = 0;
-	bits->tcp_opts.nr = 0;
-	for(i = 0; i < ROHC_TCP_OPTS_MAX; i++)
-	{
-		bits->tcp_opts.expected_dynamic[i] = false;
-		bits->tcp_opts.found[i] = false;
-	}
-	for(i = 0; i <= MAX_TCP_OPTION_INDEX; i++)
-	{
-		bits->tcp_opts.bits[i].used = false;
-	}
 
 	/* if context handled at least one packet, init the list of IP headers */
 	if(context->num_recv_packets >= 1)
@@ -3338,13 +3292,6 @@ static bool d_tcp_decode_bits_tcp_hdr(const struct rohc_decomp_ctxt *const conte
 		decoded->urg_ptr = tcp_context->urg_ptr;
 	}
 
-	/* decode TCP options */
-	if(!d_tcp_decode_bits_tcp_opts(context, bits, decoded))
-	{
-		rohc_decomp_warn(context, "failed to decode bits extracted for TCP options");
-		goto error;
-	}
-
 	return true;
 
 error:
@@ -3454,169 +3401,6 @@ static void d_tcp_decode_bits_tcp_flags(const struct rohc_decomp_ctxt *const con
 	                  decoded->ecn_flags, rohc_b2u(decoded->urg_flag),
 	                  rohc_b2u(decoded->ack_flag), rohc_b2u(decoded->psh_flag),
 	                  decoded->rsf_flags);
-}
-
-
-/**
- * @brief Decode values for the TCP options from extracted bits
- *
- * @param context       The decompression context
- * @param bits          The bits extracted from the ROHC packet
- * @param[out] decoded  The corresponding decoded values
- * @return              true if decoding is successful, false otherwise
- */
-static bool d_tcp_decode_bits_tcp_opts(const struct rohc_decomp_ctxt *const context,
-                                       const struct rohc_tcp_extr_bits *const bits,
-                                       struct rohc_tcp_decoded_values *const decoded)
-{
-	const struct d_tcp_context *const tcp_context = context->persist_ctxt;
-	size_t tcp_opt_id;
-
-	rohc_decomp_debug(context, "decode %zu TCP options", bits->tcp_opts.nr);
-
-	/* copy the informations collected on TCP options */
-	memcpy(&decoded->tcp_opts, &bits->tcp_opts, sizeof(struct d_tcp_opts_ctxt));
-
-	for(tcp_opt_id = 0; tcp_opt_id < decoded->tcp_opts.nr; tcp_opt_id++)
-	{
-		const uint8_t opt_index = decoded->tcp_opts.structure[tcp_opt_id];
-		struct d_tcp_opt_ctxt *const opt_bits = &(decoded->tcp_opts.bits[opt_index]);
-		const uint8_t opt_type = opt_bits->type;
-
-		assert(decoded->tcp_opts.bits[opt_index].used);
-
-		rohc_decomp_debug(context, "  decode TCP option '%s' (%u)",
-		                  tcp_opt_get_descr(opt_type), opt_type);
-
-		/* specific actions for some TCP options */
-		if(opt_index == TCP_INDEX_EOL)
-		{
-			if(opt_bits->data.eol.is_static)
-			{
-				opt_bits->data.eol.len =
-					tcp_context->tcp_opts.bits[opt_index].data.eol.len;
-			}
-		}
-		else if(opt_index == TCP_INDEX_MSS)
-		{
-			if(opt_bits->data.mss.is_static)
-			{
-				opt_bits->data.mss.value =
-					tcp_context->tcp_opts.bits[opt_index].data.mss.value;
-			}
-		}
-		else if(opt_index == TCP_INDEX_WS)
-		{
-			if(opt_bits->data.ws.is_static)
-			{
-				opt_bits->data.ws.value =
-					tcp_context->tcp_opts.bits[opt_index].data.ws.value;
-			}
-		}
-		else if(opt_index == TCP_INDEX_TS)
-		{
-			/* decode TS request field */
-			if(!d_tcp_decode_opt_ts_field(context, "request",
-			                              &tcp_context->opt_ts_req_lsb_ctxt,
-			                              bits->tcp_opts.bits[TCP_INDEX_TS].data.ts.req,
-			                              &decoded->opt_ts_req))
-			{
-				rohc_decomp_warn(context, "failed to decode TimeStamp option: failed to "
-				                 "decode request field");
-				goto error;
-			}
-			rohc_decomp_debug(context, "    TS echo request = 0x%08x",
-			                  decoded->opt_ts_req);
-
-			/* decode TS reply field */
-			if(!d_tcp_decode_opt_ts_field(context, "reply",
-			                              &tcp_context->opt_ts_rep_lsb_ctxt,
-			                              bits->tcp_opts.bits[TCP_INDEX_TS].data.ts.rep,
-			                              &decoded->opt_ts_rep))
-			{
-				rohc_decomp_warn(context, "failed to decode TimeStamp option: failed to "
-				                 "decode reply field");
-				goto error;
-			}
-			rohc_decomp_debug(context, "    TS echo reply = 0x%08x",
-			                  decoded->opt_ts_rep);
-		}
-		else if(opt_index >= TCP_INDEX_GENERIC7)
-		{
-			/* generic option: in case of static or stable encoding, retrieve option
-			 * data from the context */
-			if(bits->tcp_opts.bits[opt_index].data.generic.type == TCP_GENERIC_OPT_STATIC ||
-			   bits->tcp_opts.bits[opt_index].data.generic.type == TCP_GENERIC_OPT_STABLE)
-			{
-				opt_bits->data.generic.load_len =
-					tcp_context->tcp_opts.bits[opt_index].data.generic.load_len;
-				memcpy(opt_bits->data.generic.load,
-				       tcp_context->tcp_opts.bits[opt_index].data.generic.load,
-				       opt_bits->data.generic.load_len);
-			}
-		}
-	}
-
-	return true;
-
-error:
-	return false;
-}
-
-
-/**
- * @brief Decode the given TS field of the TCP TimeStamp (TS) option
- *
- * @warning The available length in the \e opt_ts->uncomp_opt buffer shall have
- *          been checked before calling this function
- *
- * @param context          The decompression context
- * @param descr            A description for the TS field being decoded
- * @param lsb_ctxt         The LSB decoding context to use for decoding
- * @param ts               The TS bits extracted from the ROHC packet
- * @param[out] ts_decoded  The decoded TS field (in HBO)
- * @return                 true if TS field was successfully decoded,
- *                         false if a problem occurred during decoding
- */
-static bool d_tcp_decode_opt_ts_field(const struct rohc_decomp_ctxt *const context,
-                                      const char *const descr,
-                                      const struct rohc_lsb_decode *const lsb_ctxt,
-                                      const struct rohc_lsb_field32 ts,
-                                      uint32_t *const ts_decoded)
-{
-	if(ts.bits_nr == 32)
-	{
-		*ts_decoded = ts.bits;
-	}
-	else
-	{
-		/* we cannot decode TS field if decompressor never received an uncompressed
-		 * value */
-		if(!rohc_lsb_is_ready(lsb_ctxt))
-		{
-			rohc_decomp_warn(context, "compressor sent a compressed TCP Timestamp "
-			                 "option, but uncompressed value was not received yet");
-			goto error;
-		}
-
-		/* decode TS field from packet bits and context */
-		if(!rohc_lsb_decode(lsb_ctxt, ROHC_LSB_REF_0, 0, ts.bits, ts.bits_nr, ts.p,
-		                    ts_decoded))
-		{
-			rohc_decomp_warn(context, "failed to decode %zu TimeStamp option %s bits "
-			                 "0x%x with p = %u", ts.bits_nr, descr, ts.bits, ts.p);
-			goto error;
-		}
-		rohc_decomp_debug(context, "decoded TimeStamp option %s = 0x%08x (%zu bits "
-		                  "0x%x with ref 0x%08x and p = %d)", descr, *ts_decoded,
-		                  ts.bits_nr, ts.bits,
-		                  rohc_lsb_get_ref(lsb_ctxt, ROHC_LSB_REF_0), ts.p);
-	}
-
-	return true;
-
-error:
-	return false;
 }
 
 /**
@@ -4070,7 +3854,6 @@ static void d_tcp_update_ctxt(struct rohc_decomp_ctxt *const context,
 	struct d_tcp_context *const tcp_context = context->persist_ctxt;
 	const uint16_t msn = decoded->msn;
 	size_t ip_hdr_nr;
-	size_t i;
 
 	/* Context Replication: clone the base context into the new context */
 	if(decoded->do_ctxt_replication)
@@ -4207,40 +3990,6 @@ static void d_tcp_update_ctxt(struct rohc_decomp_ctxt *const context,
 
 	/* TCP checksum is sent every time, nothing to update in context */
 	/* TCP Urgent pointer is sent every time, nothing to update in context */
-
-	/* copy the informations collected on TCP options */
-	tcp_context->tcp_opts.nr = decoded->tcp_opts.nr;
-	memcpy(&tcp_context->tcp_opts.structure, &decoded->tcp_opts.structure,
-	       sizeof(uint8_t) * ROHC_TCP_OPTS_MAX);
-	memcpy(&tcp_context->tcp_opts.expected_dynamic, &decoded->tcp_opts.expected_dynamic,
-	       sizeof(bool) * ROHC_TCP_OPTS_MAX);
-	memcpy(&tcp_context->tcp_opts.found, &decoded->tcp_opts.found,
-	       sizeof(bool) * ROHC_TCP_OPTS_MAX);
-	for(i = 0; i <= MAX_TCP_OPTION_INDEX; i++)
-	{
-		if(decoded->tcp_opts.bits[i].used)
-		{
-			memcpy(&tcp_context->tcp_opts.bits[i], &decoded->tcp_opts.bits[i],
-			       sizeof(struct d_tcp_opt_ctxt));
-		}
-	}
-	for(i = 0; i < decoded->tcp_opts.nr; i++)
-	{
-		const uint8_t opt_index = decoded->tcp_opts.structure[i];
-		const uint8_t opt_type = decoded->tcp_opts.bits[opt_index].type;
-
-		assert(decoded->tcp_opts.bits[opt_index].used);
-
-		rohc_decomp_debug(context, "  update context with TCP option '%s' (%u)",
-		                  tcp_opt_get_descr(opt_type), opt_type);
-
-		/* specific actions for some TCP options */
-		if(opt_index == TCP_INDEX_TS)
-		{
-			rohc_lsb_set_ref(&tcp_context->opt_ts_req_lsb_ctxt, decoded->opt_ts_req, false);
-			rohc_lsb_set_ref(&tcp_context->opt_ts_rep_lsb_ctxt, decoded->opt_ts_rep, false);
-		}
-	}
 }
 
 

@@ -1982,7 +1982,6 @@ static int c_tcp_build_rnd_8(const struct rohc_comp_ctxt *const context,
 {
 	rnd_8_t *const rnd8 = (rnd_8_t *) rohc_data;
 	uint32_t seq_num;
-	size_t comp_opts_len;
 	uint8_t ttl_hl;
 	uint8_t msn;
 
@@ -2030,9 +2029,8 @@ static int c_tcp_build_rnd_8(const struct rohc_comp_ctxt *const context,
 	/* the structure of the list of TCP options didn't change */
 	rohc_comp_debug(context, "compressed list of TCP options: list not present");
 	rnd8->list_present = 0;
-	comp_opts_len = 0;
 
-	return (sizeof(rnd_8_t) + comp_opts_len);
+	return sizeof(rnd_8_t);
 
 error:
 	return -1;
@@ -2491,7 +2489,6 @@ static int c_tcp_build_seq_8(const struct rohc_comp_ctxt *const context,
 {
 	seq_8_t *const seq8 = (seq_8_t *) rohc_data;
 	const struct ipv4_hdr *const ipv4 = (struct ipv4_hdr *) inner_ip_hdr;
-	size_t comp_opts_len;
 	uint16_t ack_num;
 	uint16_t seq_num;
 
@@ -2544,9 +2541,8 @@ static int c_tcp_build_seq_8(const struct rohc_comp_ctxt *const context,
 	/* the structure of the list of TCP options didn't change */
 	rohc_comp_debug(context, "compressed list of TCP options: list not present");
 	seq8->list_present = 0;
-	comp_opts_len = 0;
 
-	return (sizeof(seq_8_t) + comp_opts_len);
+	return sizeof(seq_8_t);
 
 error:
 	return -1;

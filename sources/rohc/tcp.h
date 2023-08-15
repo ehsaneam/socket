@@ -57,52 +57,6 @@
  */
 #define ROHC_TCP_MAX_IP_HDRS        2U
 
-
-/**
- * @brief The maximum number of IP extension header supported by the TCP profile
- *
- * The limit value was chosen arbitrarily. It should handle most real-life case
- * without hurting performances nor memory footprint.
- */
-#define ROHC_TCP_MAX_IP_EXT_HDRS    5U
-
-
-/**
- * @brief The largest index that may be used to identify one TCP option
- *
- * The ROHC standard defines that one TCP option is identified by an index. It
- * also defines that index is in range [0 ; 15].
- */
-#define MAX_TCP_OPTION_INDEX 15U
-
-
-/**
- * @brief The maximum of TCP options supported by the TCP protocol
- *
- * One TCP header may contain up to 40 bytes of options, so it may contain
- * up 40 1-byte options.
- *
- * @see ROHC_TCP_OPTS_MAX
- */
-#define ROHC_TCP_OPTS_MAX_PROTO  40U
-
-
-/**
- * @brief The maximum of TCP options supported by the TCP profile
- *
- * One TCP header may contain up to 40 bytes of options, so it may contain
- * up 40 1-byte options, so the ROHC (de)compressors should expect such TCP
- * packets. However the m field in the compressed list of TCP options (see
- * RFC 6846, section 6.3.3 for more details) cannot be larger than 15, so
- * restrict the number of TCP options that value. One TCP packet with more
- * than 15 TCP options will be compressed with the IP-only profile.
- *
- * @see ROHC_TCP_OPTS_MAX_PROTO
- */
-#define ROHC_TCP_OPTS_MAX  15U
-
-
-
 /************************************************************************
  * Uncompressed TCP base header                                         *
  ************************************************************************/
@@ -166,22 +120,6 @@ typedef enum
 	ROHC_TCP_CHAIN_CO        = 4,  /**< Not a chain, but in CO packet */
 
 } rohc_tcp_chain_t;
-
-
-/** The different TCP options */
-typedef enum
-{
-	TCP_OPT_EOL       = 0U,  /**< The End of Option List (EOL) TCP option */
-	TCP_OPT_NOP       = 1U,  /**< The No OPeration (NOP) TCP option */
-#define TCP_OLEN_MSS         4U
-	TCP_OPT_WS        = 3U,  /**< The Window Scale (WS) TCP option */
-#define TCP_OLEN_WS          3U
-	TCP_OPT_TS        = 8U,  /**< The TimeStamp (TS) TCP option */
-#define TCP_OLEN_TS         10U
-	TCP_OPT_MAX       = 255U /**< The maximum TCP option */
-
-} rohc_tcp_option_type_t;
-
 
 #define TCP_INDEX_NOP          0U
 #define TCP_INDEX_EOL          1U
@@ -1025,10 +963,6 @@ typedef struct
 static inline char * tcp_ip_id_behavior_get_descr(const tcp_ip_id_behavior_t ip_id_behavior)
 	__attribute__((warn_unused_result, const));
 
-static inline char * tcp_opt_get_descr(const uint8_t opt_type)
-	__attribute__((warn_unused_result, const));
-
-
 /**
  * @brief Get a string that describes the given IP-ID behavior
  *
@@ -1051,31 +985,6 @@ static inline char * tcp_ip_id_behavior_get_descr(const tcp_ip_id_behavior_t beh
 			return "unknown IP-ID behavior";
 	}
 }
-
-
-/**
- * @brief Get a string that describes the given option type
- *
- * @param opt_type  The type of the option to get a description for
- * @return          The description of the option
- */
-static inline char * tcp_opt_get_descr(const uint8_t opt_type)
-{
-	switch(opt_type)
-	{
-		case TCP_OPT_EOL:
-			return "EOL";
-		case TCP_OPT_NOP:
-			return "NOP";
-		case TCP_OPT_WS:
-			return "Window Scale";
-		case TCP_OPT_TS:
-			return "Timestamp";
-		default:
-			return "generic";
-	}
-}
-
 
 #endif /* ROHC_PROTOCOLS_TCP_H */
 
