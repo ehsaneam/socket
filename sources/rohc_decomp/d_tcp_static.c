@@ -174,10 +174,6 @@ static int tcp_parse_static_ip(const struct rohc_decomp_ctxt *const context,
 		memcpy(ip_bits->daddr, &ipv4_static->dst_addr, sizeof(uint32_t));
 		ip_bits->daddr_nr = 32;
 
-		/* IP extension headers not supported for IPv4 */
-		ip_bits->opts_nr = 0;
-		ip_bits->opts_len = 0;
-
 		read += sizeof(ipv4_static_t);
 #ifndef __clang_analyzer__ /* silent warning about dead in/decrement */
 		remain_data += sizeof(ipv4_static_t);

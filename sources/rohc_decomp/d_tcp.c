@@ -2628,8 +2628,6 @@ static void d_tcp_reset_extr_bits(const struct rohc_decomp_ctxt *const context,
 	/* set every bits and sizes to 0 */
 	for(i = 0; i < ROHC_TCP_MAX_IP_HDRS; i++)
 	{
-		size_t j;
-
 		bits->ip[i].version = 0;
 		bits->ip[i].dscp_bits_nr = 0;
 		bits->ip[i].ecn_flags_bits_nr = 0;
@@ -2641,12 +2639,6 @@ static void d_tcp_reset_extr_bits(const struct rohc_decomp_ctxt *const context,
 		bits->ip[i].flowid_nr = 0;
 		bits->ip[i].saddr_nr = 0;
 		bits->ip[i].daddr_nr = 0;
-		for(j = 0; j < ROHC_TCP_MAX_IP_EXT_HDRS; j++)
-		{
-			bits->ip[i].opts[j].len = 0;
-		}
-		bits->ip[i].opts_nr = 0;
-		bits->ip[i].opts_len = 0;
 	}
 	bits->ip_nr = 0;
 	bits->msn.bits_nr = 0;
@@ -3044,13 +3036,7 @@ static bool d_tcp_decode_bits_ip_hdr(const struct rohc_decomp_ctxt *const contex
 		memcpy(ip_decoded->daddr, &ip_context->ctxt.v4.dst_addr, 4);
 		rohc_decomp_debug(context, "  4-byte destination address (context)");
 	}
-
-	/* extension headers */
-	assert(ip_bits->opts_nr <= ROHC_TCP_MAX_IP_EXT_HDRS);
-	ip_decoded->opts_nr = ip_bits->opts_nr;
-	ip_decoded->opts_len = ip_bits->opts_len;
 	return true;
-
 error:
 	return false;
 }
@@ -4157,12 +4143,6 @@ static void d_tcp_update_ctxt(struct rohc_decomp_ctxt *const context,
 				rohc_decomp_debug(context, "innermost IP-ID offset 0x%04x is the new "
 				                  "reference", ip_id_offset);
 			}
-
-			/* no extension header for IPv4 */
-			assert(ip_decoded->opts_nr == 0);
-			assert(ip_decoded->opts_len == 0);
-			ip_context->opts_nr = ip_decoded->opts_nr;
-			ip_context->opts_len = ip_decoded->opts_len;
 		}
 	}
 	tcp_context->ip_contexts_nr = decoded->ip_nr;

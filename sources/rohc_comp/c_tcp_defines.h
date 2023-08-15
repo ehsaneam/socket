@@ -158,9 +158,7 @@ typedef struct
 
 	/* Context Replication */
 	bool cr_ttl_hopl_present;
-
-	size_t opts_nr;
-
+	
 } ip_context_t;
 
 

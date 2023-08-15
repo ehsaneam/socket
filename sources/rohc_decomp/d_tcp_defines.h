@@ -102,10 +102,6 @@ typedef struct
 		ipv4_context_t v4;
 	} ctxt;
 
-	size_t opts_nr;
-	size_t opts_len;
-	ip_option_context_t opts[ROHC_TCP_MAX_IP_EXT_HDRS];
-
 } ip_context_t;
 
 
@@ -255,11 +251,6 @@ struct rohc_tcp_extr_ip_bits
 	uint8_t daddr[16];   /**< The destination address bits found in static
 	                          chain of IR header */
 	size_t daddr_nr;     /**< The number of source address bits */
-
-	/** The parsed IP extension headers */
-	ip_option_context_t opts[ROHC_TCP_MAX_IP_EXT_HDRS];
-	size_t opts_nr;  /**< The number of parsed IP extension headers */
-	size_t opts_len; /**< The length of the parsed IP extension headers */
 };
 
 
@@ -334,11 +325,6 @@ struct rohc_tcp_decoded_ip_values
 	uint8_t sid:1;       /**< The decoded SID field (IPv4 only) */
 	uint8_t saddr[16];   /**< The decoded source address field */
 	uint8_t daddr[16];   /**< The decoded destination address field */
-
-	/** The decoded IP extension headers */
-	ip_option_context_t opts[ROHC_TCP_MAX_IP_EXT_HDRS];
-	size_t opts_nr;  /**< The number of decoded IP extension headers */
-	size_t opts_len; /**< The length of the decoded IP extension headers */
 };
 
 
