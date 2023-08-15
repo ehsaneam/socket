@@ -29,7 +29,6 @@
 #include "d_tcp_dynamic.h"
 
 #include "d_tcp_defines.h"
-#include "d_tcp_opts_list.h"
 #include "rohc_utils.h"
 #include "ip_numbers.h"
 #include "rfc4996.h"
@@ -375,19 +374,7 @@ static int tcp_parse_dynamic_tcp(const struct rohc_decomp_ctxt *const context,
 	remain_len -= ret;
 
 	/* parse the compressed list of TCP options */
-	ret = d_tcp_parse_tcp_opts_list_item(context, remain_data, remain_len, true,
-	                                     &bits->tcp_opts);
-	if(ret < 0)
-	{
-		rohc_decomp_warn(context, "failed to parse optional compressed list "
-		                 "of TCP options");
-		goto error;
-	}
-	rohc_decomp_debug(context, "compressed list of TCP options = %d bytes", ret);
-#ifndef __clang_analyzer__ /* silent warning about dead in/decrement */
-	remain_data += ret;
-#endif
-	remain_len -= ret;
+	remain_len--;
 
 	assert(remain_len <= rohc_length);
 	rohc_decomp_dump_buf(context, "TCP dynamic part",

@@ -31,7 +31,6 @@
 #include "d_tcp_dynamic.h"
 #include "d_tcp_replicate.h"
 #include "d_tcp_irregular.h"
-#include "d_tcp_opts_list.h"
 
 #include "rohc_decomp.h"
 #include "rohc_decomp_internals.h"
@@ -1143,7 +1142,6 @@ static bool d_tcp_parse_CO(const struct rohc_decomp_ctxt *const context,
 		sizeof(uint8_t);   /* ttl_hopl */
 	uint8_t packed_rohc_packet[packed_rohc_packet_max_len];
 	const struct d_tcp_context *const tcp_context = context->persist_ctxt;
-	int ret;
 
 	/* remaining ROHC data not parsed yet */
 	const uint8_t *rohc_remain_data;
@@ -1312,18 +1310,6 @@ static bool d_tcp_parse_CO(const struct rohc_decomp_ctxt *const context,
 			bits->tcp_opts.found[i] = false;
 		}
 		rohc_opts_len = 0;
-	}
-	else
-	{
-		ret = d_tcp_parse_tcp_opts_list_item(context, rohc_remain_data,
-		                                     rohc_remain_len, false, &bits->tcp_opts);
-		if(ret < 0)
-		{
-			rohc_decomp_warn(context, "failed to parse optional compressed list "
-			                 "of TCP options");
-			goto error;
-		}
-		rohc_opts_len = ret;
 	}
 	rohc_decomp_debug(context, "ROHC packet = header (%zu bytes) + options (%zu "
 	                  "bytes) = %zu bytes", *rohc_hdr_len, rohc_opts_len,
@@ -3820,7 +3806,6 @@ static bool d_tcp_build_tcp_hdr(const struct rohc_decomp_ctxt *const context,
 {
 	struct tcphdr *const tcp = (struct tcphdr *) rohc_buf_data(*uncomp_packet);
 	const size_t tcp_hdr_len = sizeof(struct tcphdr);
-	size_t tcp_opts_len;
 
 	*tcp_full_len = 0;
 
@@ -3857,14 +3842,6 @@ static bool d_tcp_build_tcp_hdr(const struct rohc_decomp_ctxt *const context,
 	uncomp_packet->len += tcp_hdr_len;
 	rohc_buf_pull(uncomp_packet, tcp_hdr_len);
 	*tcp_full_len += tcp_hdr_len;
-
-	/* build TCP options */
-	if(!d_tcp_build_tcp_opts(context, decoded, uncomp_packet, &tcp_opts_len))
-	{
-		rohc_decomp_warn(context, "failed to build TCP options");
-		goto error;
-	}
-	*tcp_full_len += tcp_opts_len;
 
 	/* now, compute data offset */
 	rohc_decomp_debug(context, "TCP header is %zu-byte long with TCP options",

@@ -29,7 +29,6 @@
 #include "d_tcp_irregular.h"
 
 #include "d_tcp_defines.h"
-#include "d_tcp_opts_list.h"
 #include "rohc_utils.h"
 
 #include <string.h>
@@ -338,7 +337,6 @@ static int tcp_parse_irregular_tcp(const struct rohc_decomp_ctxt *const context,
 	const struct d_tcp_context *const tcp_context = context->persist_ctxt;
 	const uint8_t *remain_data = rohc_data;
 	size_t remain_len = rohc_data_len;
-	int ret;
 
 	rohc_decomp_debug(context, "decode TCP irregular chain");
 
@@ -381,21 +379,6 @@ static int tcp_parse_irregular_tcp(const struct rohc_decomp_ctxt *const context,
 	remain_data += sizeof(uint16_t);
 	remain_len -= sizeof(uint16_t);
 	rohc_decomp_debug(context, "TCP checksum = 0x%04x", bits->tcp_check);
-
-	/* complete TCP options with the irregular part */
-	ret = d_tcp_parse_tcp_opts_irreg(context, remain_data, remain_len,
-	                                 &bits->tcp_opts);
-	if(ret < 0)
-	{
-		rohc_decomp_warn(context, "failed to parse optional compressed list "
-		                 "of TCP options");
-		goto error;
-	}
-	rohc_decomp_debug(context, "compressed list of TCP options = %d bytes", ret);
-#ifndef __clang_analyzer__ /* silent warning about dead in/decrement */
-	remain_data += ret;
-#endif
-	remain_len -= ret;
 
 	rohc_decomp_dump_buf(context, "TCP irregular part", rohc_data,
 	                     rohc_data_len - remain_len);

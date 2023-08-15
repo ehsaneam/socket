@@ -25,7 +25,6 @@
 #include "d_tcp_replicate.h"
 
 #include "d_tcp_defines.h"
-#include "d_tcp_opts_list.h"
 #include "rfc4996.h"
 #include "rohc_bit_ops.h"
 #include "rohc_utils.h"
@@ -471,22 +470,6 @@ static int tcp_parse_replicate_tcp(const struct rohc_decomp_ctxt *const context,
 	{
 		/* same list as in base context */
 		memcpy(&bits->tcp_opts, &tcp_context->tcp_opts, sizeof(struct d_tcp_opts_ctxt));
-	}
-	else
-	{
-		ret = d_tcp_parse_tcp_opts_list_item(context, remain_data, remain_len, false,
-		                                     &bits->tcp_opts);
-		if(ret < 0)
-		{
-			rohc_decomp_warn(context, "failed to parse optional compressed list "
-			                 "of TCP options");
-			goto error;
-		}
-		rohc_decomp_debug(context, "compressed list of TCP options = %d bytes", ret);
-#ifndef __clang_analyzer__ /* silent warning about dead in/decrement */
-		remain_data += ret;
-#endif
-		remain_len -= ret;
 	}
 
 	assert(remain_len <= rohc_length);
