@@ -48,6 +48,7 @@
 #include "c_tcp_replicate.h"
 #include "c_tcp_irregular.h"
 
+#include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -606,6 +607,8 @@ static bool c_tcp_check_profile(const struct rohc_comp *const comp,
 
 	assert(comp != NULL);
 	assert(packet != NULL);
+
+	printf("c_tcp_check_profile\n");
 
 	remain_data = packet->outer_ip.data;
 	remain_len = packet->outer_ip.size;

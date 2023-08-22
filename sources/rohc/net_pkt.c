@@ -93,12 +93,6 @@ size_t net_pkt_get_payload_offset(const struct net_pkt *const packet)
 	/* outer IP header (and its extension headers) if any */
 	payload_offset = ip_get_hdrlen(&packet->outer_ip);
 
-	/* inner IP header (and its extension headers) if any */
-	if(packet->ip_hdr_nr > 1)
-	{
-		payload_offset += ip_get_hdrlen(&packet->inner_ip);
-	}
-
 	/* the length of the transport header depends on the compression profile */
 
 	return payload_offset;

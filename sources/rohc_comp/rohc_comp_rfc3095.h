@@ -175,8 +175,6 @@ struct rohc_comp_rfc3095_ctxt
 	size_t ip_hdr_nr;
 	/// Information about the outer IP header
 	struct ip_header_info outer_ip_flags;
-	/// Information about the inner IP header
-	struct ip_header_info inner_ip_flags;
 
 	/** Whether the cache for the CRC-3 value on CRC-STATIC fields is initialized or not */
 	bool is_crc_static_3_cached_valid;
@@ -364,9 +362,7 @@ static inline bool is_outer_ip_id_bits_possible(const struct rohc_comp_rfc3095_c
  */
 static inline bool no_inner_ip_id_bits_required(const struct rohc_comp_rfc3095_ctxt *const ctxt)
 {
-	return (ctxt->inner_ip_flags.version != IPV4 ||
-	        ctxt->inner_ip_flags.info.v4.rnd == 1 ||
-	        ctxt->tmp.nr_ip_id_bits2 == 0);
+	return (ctxt->tmp.nr_ip_id_bits2 == 0);
 }
 
 
@@ -381,9 +377,7 @@ static inline bool no_inner_ip_id_bits_required(const struct rohc_comp_rfc3095_c
 static inline bool is_inner_ip_id_bits_possible(const struct rohc_comp_rfc3095_ctxt *const ctxt,
                                                 const size_t max_ip_id_bits_nr)
 {
-	return (ctxt->inner_ip_flags.version == IPV4 &&
-	        ctxt->inner_ip_flags.info.v4.rnd != 1 &&
-	        ctxt->tmp.nr_ip_id_bits2 <= max_ip_id_bits_nr);
+	return (ctxt->tmp.nr_ip_id_bits2 <= max_ip_id_bits_nr);
 }
 
 
@@ -399,14 +393,6 @@ static inline size_t get_nr_ipv4_non_rnd(const struct rohc_comp_rfc3095_ctxt *co
 
 	/* outer IP header */
 	if(ctxt->outer_ip_flags.version == IPV4 && ctxt->outer_ip_flags.info.v4.rnd != 1)
-	{
-		nr_ipv4_non_rnd++;
-	}
-
-	/* optional inner IP header */
-	if(ctxt->ip_hdr_nr >= 1 &&
-	   ctxt->inner_ip_flags.version == IPV4 &&
-	   ctxt->inner_ip_flags.info.v4.rnd != 1)
 	{
 		nr_ipv4_non_rnd++;
 	}
@@ -431,15 +417,6 @@ static inline size_t get_nr_ipv4_non_rnd_with_bits(const struct rohc_comp_rfc309
 	if(ctxt->outer_ip_flags.version == IPV4 &&
 	   ctxt->outer_ip_flags.info.v4.rnd != 1 &&
 	   ctxt->tmp.nr_ip_id_bits > 0)
-	{
-		nr_ipv4_non_rnd_with_bits++;
-	}
-
-	/* optional inner IP header */
-	if(ctxt->ip_hdr_nr >= 1 &&
-	   ctxt->inner_ip_flags.version == IPV4 &&
-	   ctxt->inner_ip_flags.info.v4.rnd != 1 &&
-	   ctxt->tmp.nr_ip_id_bits2 > 0)
 	{
 		nr_ipv4_non_rnd_with_bits++;
 	}

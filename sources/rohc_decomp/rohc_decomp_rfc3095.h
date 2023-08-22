@@ -123,9 +123,6 @@ struct rohc_extr_bits
 	/** bits related to outer IP header */
 	struct rohc_extr_ip_bits outer_ip;
 
-	/** bits related to inner IP header */
-	struct rohc_extr_ip_bits inner_ip;
-
 	/* Mode bits */
 	uint8_t mode:2;         /**< The Mode bits found in ROHC header */
 	size_t mode_nr;         /**< The number of Mode bits found in ROHC header */
@@ -193,8 +190,6 @@ struct rohc_decoded_values
 	bool multiple_ip;
 	/** The decoded values for the outer IP header */
 	struct rohc_decoded_ip_values outer_ip;
-	/** The decoded values for the inner IP header */
-	struct rohc_decoded_ip_values inner_ip;
 
 	/* bits below are for UDP-based profile only
 	   @todo TODO should be moved in d_udp.c */
@@ -249,8 +244,6 @@ struct rohc_decomp_rfc3095_ctxt
 {
 	/// Information about the outer IP header
 	struct rohc_decomp_rfc3095_changes *outer_ip_changes;
-	/// Information about the inner IP header
-	struct rohc_decomp_rfc3095_changes *inner_ip_changes;
 
 	/** The LSB shift parameter for the Sequence Number (SN) */
 	rohc_lsb_shift_t sn_lsb_p;
@@ -258,8 +251,6 @@ struct rohc_decomp_rfc3095_ctxt
 	struct rohc_lsb_decode sn_lsb_ctxt;
 	/// The IP-ID of the outer IP header
 	struct ip_id_offset_decode outer_ip_id_offset_ctxt;
-	/// The IP-ID of the inner IP header
-	struct ip_id_offset_decode inner_ip_id_offset_ctxt;
 
 	/// The list decompressor of the outer IP header
 	struct list_decomp list_decomp1;

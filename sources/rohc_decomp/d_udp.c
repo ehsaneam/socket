@@ -37,7 +37,6 @@
 #include <string.h>
 #include <assert.h>
 
-
 /**
  * @brief Define the UDP part of the decompression profile context.
  *
@@ -52,7 +51,6 @@ struct d_udp_context
 	uint16_t dport;                    /**< UDP destination port */
 	rohc_tristate_t udp_check_present; /**< Whether the UDP checksum is used */
 };
-
 
 /*
  * Private function prototypes.
@@ -167,23 +165,11 @@ static bool d_udp_create(const struct rohc_decomp_ctxt *const context,
 		goto free_udp_context;
 	}
 
-	rfc3095_ctxt->inner_ip_changes->next_header_len = sizeof(struct udphdr);
-	rfc3095_ctxt->inner_ip_changes->next_header = calloc(1, sizeof(struct udphdr));
-	if(rfc3095_ctxt->inner_ip_changes->next_header == NULL)
-	{
-		rohc_error(context->decompressor, ROHC_TRACE_DECOMP, context->profile->id,
-		           "cannot allocate memory for the UDP-specific part of the "
-		           "inner IP header changes");
-		goto free_outer_ip_changes_next_header;
-	}
-
 	/* set next header to UDP */
 	rfc3095_ctxt->next_header_proto = ROHC_IPPROTO_UDP;
 
 	return true;
 
-free_outer_ip_changes_next_header:
-	zfree(rfc3095_ctxt->outer_ip_changes->next_header);
 free_udp_context:
 	zfree(udp_context);
 destroy_context:
@@ -208,8 +194,6 @@ static void d_udp_destroy(struct rohc_decomp_rfc3095_ctxt *const rfc3095_ctxt,
 	/* clean UDP-specific memory */
 	assert(rfc3095_ctxt->outer_ip_changes != NULL);
 	zfree(rfc3095_ctxt->outer_ip_changes->next_header);
-	assert(rfc3095_ctxt->inner_ip_changes != NULL);
-	zfree(rfc3095_ctxt->inner_ip_changes->next_header);
 
 	/* destroy the resources of the generic context */
 	rohc_decomp_rfc3095_destroy(rfc3095_ctxt, volat_ctxt);

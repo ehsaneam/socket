@@ -287,6 +287,8 @@ uint8_t compute_crc_static(const uint8_t *const outer_ip,
 	const struct ip_hdr *const outer_ip_hdr = (struct ip_hdr *) outer_ip;
 	uint8_t crc = init_val;
 
+	assert(inner_ip==NULL || inner_ip!=NULL);
+
 	/* first IPv4 header */
 	if(outer_ip_hdr->version == IPV4)
 	{
@@ -301,28 +303,6 @@ uint8_t compute_crc_static(const uint8_t *const outer_ip,
 		/* bytes 13-20 (Source Address, Destination Address) */
 		crc = crc_calculate(crc_type, (uint8_t *)(&ip_hdr->saddr), 8,
 		                    crc, crc_table);
-	}
-
-	/* second header */
-	if(inner_ip != NULL)
-	{
-		const struct ip_hdr *const inner_ip_hdr = (struct ip_hdr *) inner_ip;
-
-		/* IPv4 */
-		if(inner_ip_hdr->version == IPV4)
-		{
-			const struct ipv4_hdr *ip_hdr = (struct ipv4_hdr *) inner_ip;
-
-			/* bytes 1-2 (Version, Header length, TOS) */
-			crc = crc_calculate(crc_type, (uint8_t *)(ip_hdr), 2,
-			                    crc, crc_table);
-			/* bytes 7-10 (Flags, Fragment Offset, TTL, Protocol) */
-			crc = crc_calculate(crc_type, (uint8_t *)(&ip_hdr->frag_off), 4,
-			                    crc, crc_table);
-			/* bytes 13-20 (Source Address, Destination Address) */
-			crc = crc_calculate(crc_type, (uint8_t *)(&ip_hdr->saddr), 8,
-			                    crc, crc_table);
-		}
 	}
 
 	return crc;
@@ -353,7 +333,7 @@ uint8_t compute_crc_dynamic(const uint8_t *const outer_ip,
 {
 	const struct ip_hdr *const outer_ip_hdr = (struct ip_hdr *) outer_ip;
 	uint8_t crc = init_val;
-
+	assert(inner_ip==NULL || inner_ip!=NULL);
 	/* first IPv4 header */
 	if(outer_ip_hdr->version == IPV4)
 	{
@@ -364,24 +344,6 @@ uint8_t compute_crc_dynamic(const uint8_t *const outer_ip,
 		/* bytes 11-12 (Header Checksum) */
 		crc = crc_calculate(crc_type, (uint8_t *)(&ip_hdr->check), 2,
 		                    crc, crc_table);
-	}
-
-	/* second_header */
-	if(inner_ip != NULL)
-	{
-		const struct ip_hdr *const inner_ip_hdr = (struct ip_hdr *) inner_ip;
-
-		/* IPv4 */
-		if(inner_ip_hdr->version == IPV4)
-		{
-			const struct ipv4_hdr *ip_hdr = (struct ipv4_hdr *) inner_ip;
-			/* bytes 3-6 (Total Length, Identification) */
-			crc = crc_calculate(crc_type, (uint8_t *)(&ip_hdr->tot_len), 4,
-			                    crc, crc_table);
-			/* bytes 11-12 (Header Checksum) */
-			crc = crc_calculate(crc_type, (uint8_t *)(&ip_hdr->check), 2,
-			                    crc, crc_table);
-		}
 	}
 
 	return crc;

@@ -45,7 +45,6 @@ struct net_pkt
 
 	size_t ip_hdr_nr;            /**< The number of IP headers */
 	struct ip_packet outer_ip;   /**< The outer IP header */
-	struct ip_packet inner_ip;   /**< The inner IP header if any */
 
 	struct net_hdr *transport;   /**< The transport layer of the packet if any */
 

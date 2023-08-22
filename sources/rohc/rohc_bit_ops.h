@@ -171,12 +171,6 @@
 	            (base)->outer_ip.id, (base)->outer_ip.id_nr, \
 	            (bits), (bits_nr), 16)
 
-/** Inner IP-ID: append new LSB bits to already extracted bits */
-#define APPEND_INNER_IP_ID_BITS(ext_no, base, bits, bits_nr) \
-	APPEND_BITS(inner IP-ID, ext_no, \
-	            (base)->inner_ip.id, (base)->inner_ip.id_nr, \
-	            (bits), (bits_nr), 16)
-
 /** TS: append new LSB bits to already extracted bits */
 #define APPEND_TS_BITS(ext_no, base, bits, bits_nr) \
 	APPEND_BITS(TS, ext_no, \

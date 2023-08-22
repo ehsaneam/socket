@@ -116,16 +116,12 @@ bool c_ip_check_context(const struct rohc_comp_ctxt *const context,
 {
 	struct rohc_comp_rfc3095_ctxt *rfc3095_ctxt;
 	struct ip_header_info *outer_ip_flags;
-	struct ip_header_info *inner_ip_flags;
 	ip_version version;
 	bool same_src;
 	bool same_dest;
-	bool same_src2;
-	bool same_dest2;
 
 	rfc3095_ctxt = (struct rohc_comp_rfc3095_ctxt *) context->specific;
 	outer_ip_flags = &rfc3095_ctxt->outer_ip_flags;
-	inner_ip_flags = &rfc3095_ctxt->inner_ip_flags;
 
 	*cr_score = 0;
 
@@ -149,47 +145,6 @@ bool c_ip_check_context(const struct rohc_comp_ctxt *const context,
 	if(!same_dest)
 	{
 		goto bad_context;
-	}
-
-	/* check the second IP header */
-	if(packet->ip_hdr_nr == 1)
-	{
-		/* no second IP header: check if the context used not to have a
-		 * second header */
-		if(rfc3095_ctxt->ip_hdr_nr > 1)
-		{
-			goto bad_context;
-		}
-	}
-	else
-	{
-		/* second header: check if the context used to have a second IP header */
-		if(rfc3095_ctxt->ip_hdr_nr == 1)
-		{
-			goto bad_context;
-		}
-
-		/* check the IP version of the second header */
-		version = ip_get_version(&packet->inner_ip);
-		if(version != inner_ip_flags->version)
-		{
-			goto bad_context;
-		}
-
-		/* compare the addresses of the second header */
-		if(version == IPV4)
-		{
-			same_src2 = inner_ip_flags->info.v4.old_ip.saddr == ipv4_get_saddr(&packet->inner_ip);
-			same_dest2 = inner_ip_flags->info.v4.old_ip.daddr == ipv4_get_daddr(&packet->inner_ip);
-		}
-		if(!same_src2)
-		{
-			goto bad_context;
-		}
-		if(!same_dest2)
-		{
-			goto bad_context;
-		}
 	}
 
 	/* check the transport protocol */
@@ -224,17 +179,7 @@ rohc_packet_t c_ip_decide_FO_packet(const struct rohc_comp_ctxt *context)
 	rfc3095_ctxt = (struct rohc_comp_rfc3095_ctxt *) context->specific;
 	nr_sn_bits_more_than_4 = rfc3095_ctxt->tmp.nr_sn_bits_more_than_4;
 
-	if((rfc3095_ctxt->outer_ip_flags.version == IPV4 &&
-	    rfc3095_ctxt->outer_ip_flags.info.v4.sid_count < MAX_FO_COUNT) ||
-	   (rfc3095_ctxt->ip_hdr_nr > 1 &&
-	    rfc3095_ctxt->inner_ip_flags.version == IPV4 &&
-	    rfc3095_ctxt->inner_ip_flags.info.v4.sid_count < MAX_FO_COUNT))
-	{
-		packet = ROHC_PACKET_IR_DYN;
-		rohc_comp_debug(context, "choose packet IR-DYN because at least one "
-		                "SID flag changed");
-	}
-	else if(rfc3095_ctxt->tmp.send_static &&
+	if(rfc3095_ctxt->tmp.send_static &&
 	        rohc_comp_rfc3095_is_sn_possible(rfc3095_ctxt, 5, 8))
 	{
 		packet = ROHC_PACKET_UOR_2;
@@ -246,13 +191,6 @@ rohc_packet_t c_ip_decide_FO_packet(const struct rohc_comp_ctxt *context)
 		packet = ROHC_PACKET_IR_DYN;
 		rohc_comp_debug(context, "choose packet IR-DYN because %d > 2 dynamic "
 		                "fields changed with a single IP header",
-		                rfc3095_ctxt->tmp.send_dynamic);
-	}
-	else if(rfc3095_ctxt->ip_hdr_nr > 1 && rfc3095_ctxt->tmp.send_dynamic > 4)
-	{
-		packet = ROHC_PACKET_IR_DYN;
-		rohc_comp_debug(context, "choose packet IR-DYN because %d > 4 dynamic "
-		                "fields changed with double IP header",
 		                rfc3095_ctxt->tmp.send_dynamic);
 	}
 	else if(rohc_comp_rfc3095_is_sn_possible(rfc3095_ctxt, 5, 8))
@@ -342,52 +280,7 @@ rohc_packet_t c_ip_decide_SO_packet(const struct rohc_comp_ctxt *context)
 			                "bits must be be transmitted", nr_sn_bits_more_than_4);
 		}
 	}
-	else /* double IP headers */
-	{
-		if(rfc3095_ctxt->outer_ip_flags.version == IPV4)
-		{
-			assert(rfc3095_ctxt->outer_ip_flags.info.v4.sid_count >= MAX_FO_COUNT);
-			assert(rfc3095_ctxt->outer_ip_flags.info.v4.rnd_count >= MAX_FO_COUNT);
-			assert(rfc3095_ctxt->outer_ip_flags.info.v4.nbo_count >= MAX_FO_COUNT);
-		}
-		if(rfc3095_ctxt->inner_ip_flags.version == IPV4)
-		{
-			assert(rfc3095_ctxt->inner_ip_flags.info.v4.sid_count >= MAX_FO_COUNT);
-			assert(rfc3095_ctxt->inner_ip_flags.info.v4.rnd_count >= MAX_FO_COUNT);
-			assert(rfc3095_ctxt->inner_ip_flags.info.v4.nbo_count >= MAX_FO_COUNT);
-		}
-
-		if(rohc_comp_rfc3095_is_sn_possible(rfc3095_ctxt, 4, 0) &&
-		   no_outer_ip_id_bits_required(rfc3095_ctxt) &&
-		   no_inner_ip_id_bits_required(rfc3095_ctxt))
-		{
-			packet = ROHC_PACKET_UO_0;
-			rohc_comp_debug(context, "choose packet UO-0");
-		}
-		else if(rohc_comp_rfc3095_is_sn_possible(rfc3095_ctxt, 5, 0) &&
-		        is_outer_ip_id_bits_possible(rfc3095_ctxt, 6) &&
-		        no_inner_ip_id_bits_required(rfc3095_ctxt))
-		{
-			packet = ROHC_PACKET_UO_1; /* IPv4 only for outer header */
-			rohc_comp_debug(context, "choose packet UO-1");
-		}
-		else if(rohc_comp_rfc3095_is_sn_possible(rfc3095_ctxt, 5, 8))
-		{
-			/* UOR-2 packet can be used only if SN stand on <= 13 bits (5 bits in
-			   base header + 8 bits in extension 3) */
-			packet = ROHC_PACKET_UOR_2;
-			rohc_comp_debug(context, "choose packet UOR-2 because %zu <= 13 SN "
-			                "bits must be transmitted", nr_sn_bits_more_than_4);
-		}
-		else
-		{
-			/* UOR-2 packet can not be used, use IR-DYN instead */
-			packet = ROHC_PACKET_IR_DYN;
-			rohc_comp_debug(context, "choose packet IR-DYN because %zu > 13 SN "
-			                "bits must be transmitted", nr_sn_bits_more_than_4);
-		}
-	}
-
+	
 	return packet;
 }
 

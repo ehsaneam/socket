@@ -34,6 +34,7 @@
 #include "rohc_comp_rfc3095.h"
 #include "udp.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -218,6 +219,8 @@ bool c_udp_check_profile(const struct rohc_comp *const comp,
 
 	assert(comp != NULL);
 	assert(packet != NULL);
+
+	printf("c_udp_check_profile\n");
 
 	/* check that the the versions of outer and inner IP headers are 4 or 6
 	   and that outer and inner IP headers are not IP fragments */
