@@ -64,10 +64,6 @@
  *  being able to switch to the FO state */
 #define MAX_IR_COUNT  3U
 
-/** The minimal number of packets that must be sent while in CR state before
- *  being able to switch to the FO state */
-#define MAX_CR_COUNT  MAX_IR_COUNT
-
 /** The minimal number of packets that must be sent while in FO state before
  *  being able to switch to the SO state */
 #define MAX_FO_COUNT  3U
@@ -307,11 +303,6 @@ struct rohc_comp_ctxt
 	/** Profile-specific data, defined by the profiles */
 	void *specific;
 
-	/** Whether Context Replication (CR) may be used */
-	bool do_ctxt_replication;
-	/** The base context for Context Replication (CR) */
-	rohc_cid_t cr_base_cid;
-
 	/** The operation mode in which the context operates among:
 	 *  ROHC_U_MODE, ROHC_R_MODE */
 	rohc_mode_t mode;
@@ -329,8 +320,6 @@ struct rohc_comp_ctxt
 	size_t fo_count;
 	/** The number of packets sent while in Second Order (SO) state */
 	size_t so_count;
-	/** The number of packets sent while in Context Replication (CR) state */
-	size_t cr_count;
 
 	/**
 	 * @brief The number of packet sent while in SO state, used for the periodic

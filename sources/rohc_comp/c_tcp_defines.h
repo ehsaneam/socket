@@ -155,9 +155,6 @@ typedef struct
 		ipvx_context_t vx;
 		ipv4_context_t v4;
 	} ctxt;
-
-	/* Context Replication */
-	bool cr_ttl_hopl_present;
 	
 } ip_context_t;
 
@@ -211,11 +208,6 @@ struct sc_tcp_context
 	uint32_t ack_num_scaled;
 	uint16_t ack_num_residue;
 	size_t ack_num_scaling_nr;
-
-	/* Context Replication */
-	bool cr_tcp_window_present;
-	bool cr_tcp_urg_ptr_present;
-	bool cr_tcp_ack_num_present;
 
 	/// The previous TCP header
 	struct tcphdr old_tcphdr;

@@ -89,8 +89,6 @@ typedef enum
 	ROHC_COMP_STATE_FO = 2,
 	/** The Second Order (SO) compressor state */
 	ROHC_COMP_STATE_SO = 3,
-	/** The Context Replication (CR) compressor state */
-	ROHC_COMP_STATE_CR = 4,
 
 } rohc_comp_state_t;
 

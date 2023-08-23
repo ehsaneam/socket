@@ -462,7 +462,7 @@ bool rohc_comp_rfc3095_check_profile(const struct rohc_comp *const comp,
 	assert(comp != NULL);
 	assert(packet != NULL);
 
-	printf("rohc_comp_rfc3095_check_profile\n");
+	// printf("rohc_comp_rfc3095_check_profile\n");
 
 	/* check the IP version of the outer header */
 	version = ip_get_version(&packet->outer_ip);
@@ -505,8 +505,8 @@ bool rohc_comp_rfc3095_check_profile(const struct rohc_comp *const comp,
 	}
 
 	/* check the inner IP header if there is one */
-	printf("rohc_comp_rfc3095_check_profile:packet->ip_hdr_nr:%ld\n",
-			packet->ip_hdr_nr);
+	// printf("rohc_comp_rfc3095_check_profile:packet->ip_hdr_nr:%ld\n",
+	// 		packet->ip_hdr_nr);
 	
 	return true;
 

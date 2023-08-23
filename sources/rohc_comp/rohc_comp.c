@@ -62,7 +62,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <stdarg.h>
-
+#include <stdio.h>
 
 extern const struct rohc_comp_profile c_udp_profile;
 extern const struct rohc_comp_profile c_tcp_profile;
@@ -1537,8 +1537,6 @@ const char * rohc_comp_get_state_descr(const rohc_comp_state_t state)
 			return "FO";
 		case ROHC_COMP_STATE_SO:
 			return "SO";
-		case ROHC_COMP_STATE_CR:
-			return "CR";
 		case ROHC_COMP_STATE_UNKNOWN:
 		default:
 			return "no description";
@@ -1655,13 +1653,15 @@ static struct rohc_comp_ctxt *
 	assert(profile != NULL);
 	assert(packet != NULL);
 
-	cid_to_use = 0;
+	cid_to_use = cid_for_replication;
 
+	assert(do_ctxt_replication==false);
 	/* if all the contexts in the array are used:
 	 *   => recycle the oldest context to make room
 	 * if at least one context in the array is not used:
 	 *   => pick the first unused context
 	 */
+	cid_to_use = 0;
 	if(comp->num_contexts_used > comp->medium.max_cid)
 	{
 		/* all the contexts in the array were used, recycle the oldest context
@@ -1713,24 +1713,6 @@ static struct rohc_comp_ctxt *
 	/* initialize the previously found context */
 	c = &comp->contexts[cid_to_use];
 
-	/* context replication? */
-	if(do_ctxt_replication && cid_to_use != cid_for_replication)
-	{
-		rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-		           "create context with CID = %zu as a replication of context "
-		           "with CID %zu", cid_to_use, cid_for_replication);
-
-		/* copy the base context, then reset some parts of it */
-		memcpy(c, &(comp->contexts[cid_for_replication]), sizeof(struct rohc_comp_ctxt));
-		c->do_ctxt_replication = true;
-		c->cr_base_cid = cid_for_replication;
-		c->cr_count = 0;
-	}
-	else
-	{
-		c->do_ctxt_replication = false;
-	}
-
 	c->ir_count = 0;
 	c->fo_count = 0;
 	c->so_count = 0;
@@ -1755,33 +1737,13 @@ static struct rohc_comp_ctxt *
 	c->profile = profile;
 
 	c->mode = ROHC_U_MODE;
-
-	/* use Context Replication (CR) compressor state instead of IR */
-	if(c->do_ctxt_replication)
-	{
-		c->state = ROHC_COMP_STATE_CR;
-	}
-	else
-	{
-		c->state = ROHC_COMP_STATE_IR;
-	}
+	c->state = ROHC_COMP_STATE_IR;
 
 	c->compressor = comp;
 
-	/* create profile-specific context */
-	if(c->do_ctxt_replication)
+	if(!profile->create(c, packet))
 	{
-		if(!profile->clone(c, &(comp->contexts[cid_for_replication])))
-		{
-			return NULL;
-		}
-	}
-	else
-	{
-		if(!profile->create(c, packet))
-		{
-			return NULL;
-		}
+		return NULL;
 	}
 
 	/* if creation is successful, mark the context as used */
@@ -1820,9 +1782,6 @@ static struct rohc_comp_ctxt *
 	struct rohc_comp_ctxt *context;
 	size_t num_used_ctxt_seen = 0;
 	rohc_cid_t i;
-
-	bool do_ctxt_replication = false;
-	rohc_cid_t best_ctxt_for_replication = ROHC_SMALL_CID_MAX + 1;
 
 	/* use the suggested profile if any, otherwise find the best profile for
 	 * the packet */
@@ -1870,46 +1829,9 @@ static struct rohc_comp_ctxt *
 		/* ask the profile whether the packet matches the context */
 		if(context->profile->check_context(context, packet, &cr_score))
 		{
-			const struct rohc_comp_ctxt *base_ctxt;
-			size_t cr_score_base_ctxt = 0;
-			bool base_ctxt_equals_ctxt;
-
-			/* hmmm, looks like we could re-use that context ; if Context Replication
-			 * is in action, check that the base context didn't change too much */
-			if(!context->do_ctxt_replication ||
-			   context->state != ROHC_COMP_STATE_CR ||
-			   context->cr_count >= MAX_CR_COUNT)
-			{
-				rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-				           "re-using context CID = %zu", context->cid);
-				break;
-			}
-			/* check whether the base context changed too much to be re-used or not */
-			base_ctxt = &(comp->contexts[context->cr_base_cid]);
 			rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-			           "Context Replication in action (%zu/%u packets sent): check "
-			           "for CID %zu whether base context with CID %zu changed too much",
-			           context->cr_count, MAX_CR_COUNT, context->cid, base_ctxt->cid);
-			base_ctxt_equals_ctxt =
-				context->profile->check_context(base_ctxt, packet, &cr_score_base_ctxt);
-			/* there are two ways the base context may have changed:
-			 *   - the base context now matches exactly the replicated context
-			 *   - the base context does not share enough with the replicated context */
-			if(!base_ctxt_equals_ctxt && cr_score_base_ctxt > 0)
-			{
-				/* no large change, we may continue the Context Replication */
-				rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-				           "re-using context CID = %zu as a replication of context "
-				           "CID %zu", context->cid, base_ctxt->cid);
-				break;
-			}
-			/* too much change, we need to interrupt the Context Replication */
-			rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-			           "cannot re-use context CID = %zu as replication of context "
-			           "CID %zu, the base context changed too much", context->cid,
-			           base_ctxt->cid);
-			cr_score = 0;
-			/* TODO: destroy that half-opened context */
+						"re-using context CID = %zu", context->cid);
+			break;
 		}
 		rohc_comp_debug(context, "context CID %zu scores %zu for Context Replication",
 		                context->cid, cr_score);
@@ -1929,7 +1851,7 @@ static struct rohc_comp_ctxt *
 		rohc_debug(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
 		           "no existing context found for packet, create a new one");
 		context = c_create_context(comp, profile, packet, arrival_time,
-		                           do_ctxt_replication, best_ctxt_for_replication);
+		                           false, 0);
 		if(context == NULL)
 		{
 			rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,

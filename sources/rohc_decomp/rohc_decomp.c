@@ -954,7 +954,6 @@ static rohc_status_t d_decode_header(struct rohc_decomp *decomp,
 
 	/* only IR or IR-CR packet can create a new context */
 	assert(stream->packet_type == ROHC_PACKET_IR ||
-	       stream->packet_type == ROHC_PACKET_IR_CR ||
 	       !is_new_context);
 
 	/* decode the packet thanks to the profile-specific routines
@@ -1231,13 +1230,6 @@ static rohc_status_t rohc_decomp_decode_pkt(struct rohc_decomp *const decomp,
 			try_decoding_again =
 				profile->attempt_repair(decomp, context, rohc_packet.time,
 				                        &context->crc_corr, extr_bits);
-
-			if((*packet_type) == ROHC_PACKET_IR_CR)
-			{
-				rohc_decomp_warn(context, "CID %zu: do not attempt context/packet repair "
-				                 "for IR-CR", context->cid);
-				try_decoding_again = false;
-			}
 
 			/* report CRC failure if attempt is not possible */
 			if(!try_decoding_again)

@@ -101,9 +101,6 @@ const char * rohc_get_packet_descr(const rohc_packet_t packet_type)
 		case ROHC_PACKET_TCP_SEQ_8:
 			return "TCP/seq_8";
 
-		case ROHC_PACKET_IR_CR:
-			return "IR-CR";
-
 		case ROHC_PACKET_UNKNOWN:
 		case ROHC_PACKET_MAX:
 		default:
@@ -213,10 +210,6 @@ rohc_packet_t rohc_get_packet_type(const char *const packet_id)
 	{
 		return ROHC_PACKET_TCP_SEQ_8;
 	}
-	else if(strcmp(packet_id, "ir-cr") == 0)
-	{
-		return ROHC_PACKET_IR_CR;
-	}
 	else
 	{
 		return ROHC_PACKET_UNKNOWN;
@@ -234,7 +227,6 @@ rohc_packet_t rohc_get_packet_type(const char *const packet_id)
 bool rohc_packet_is_ir(const rohc_packet_t packet_type)
 {
 	return (packet_type == ROHC_PACKET_IR ||
-	        packet_type == ROHC_PACKET_IR_CR ||
 	        packet_type == ROHC_PACKET_IR_DYN);
 }
 
@@ -248,7 +240,7 @@ bool rohc_packet_is_ir(const rohc_packet_t packet_type)
  */
 bool rohc_packet_carry_static_info(const rohc_packet_t packet_type)
 {
-	return (packet_type == ROHC_PACKET_IR || packet_type == ROHC_PACKET_IR_CR);
+	return (packet_type == ROHC_PACKET_IR);
 }
 
 
@@ -266,7 +258,6 @@ bool rohc_packet_carry_crc_7_or_8(const rohc_packet_t packet_type)
 	switch(packet_type)
 	{
 		case ROHC_PACKET_IR:
-		case ROHC_PACKET_IR_CR:
 		case ROHC_PACKET_IR_DYN:
 		case ROHC_PACKET_UOR_2:
 		case ROHC_PACKET_TCP_CO_COMMON:

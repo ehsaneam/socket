@@ -45,7 +45,6 @@
 #include "c_tcp_defines.h"
 #include "c_tcp_static.h"
 #include "c_tcp_dynamic.h"
-#include "c_tcp_replicate.h"
 #include "c_tcp_irregular.h"
 
 #include <stdio.h>
@@ -608,7 +607,7 @@ static bool c_tcp_check_profile(const struct rohc_comp *const comp,
 	assert(comp != NULL);
 	assert(packet != NULL);
 
-	printf("c_tcp_check_profile\n");
+	// printf("c_tcp_check_profile\n");
 
 	remain_data = packet->outer_ip.data;
 	remain_len = packet->outer_ip.size;
@@ -940,7 +939,6 @@ static int c_tcp_encode(struct rohc_comp_ctxt *const context,
 		goto error;
 	}
 	else if((*packet_type) != ROHC_PACKET_IR &&
-	        (*packet_type) != ROHC_PACKET_IR_CR &&
 	        (*packet_type) != ROHC_PACKET_IR_DYN)
 	{
 		/* co_common, seq_X, or rnd_X */
@@ -952,10 +950,9 @@ static int c_tcp_encode(struct rohc_comp_ctxt *const context,
 			goto error;
 		}
 	}
-	else /* ROHC_PACKET_IR, ROHC_PACKET_IR_CR or ROHC_PACKET_IR_DYN */
+	else /* ROHC_PACKET_IR, ROHC_PACKET_IR_DYN */
 	{
 		assert((*packet_type) == ROHC_PACKET_IR ||
-		       (*packet_type) == ROHC_PACKET_IR_CR ||
 		       (*packet_type) == ROHC_PACKET_IR_DYN);
 
 		counter = code_IR_packet(context, &uncomp_pkt->outer_ip, rohc_pkt,
@@ -1074,10 +1071,6 @@ static int code_IR_packet(struct rohc_comp_ctxt *const context,
 	{
 		rohc_pkt[first_position] = ROHC_PACKET_TYPE_IR;
 	}
-	else if(packet_type == ROHC_PACKET_IR_CR)
-	{
-		rohc_pkt[first_position] = ROHC_PACKET_TYPE_IR_CR;
-	}
 	else /* ROHC_PACKET_IR_DYN */
 	{
 		rohc_pkt[first_position] = ROHC_PACKET_TYPE_IR_DYN;
@@ -1145,77 +1138,6 @@ static int code_IR_packet(struct rohc_comp_ctxt *const context,
 		rohc_comp_dump_buf(context, "current ROHC packet (with dynamic part)",
 		                   rohc_pkt, rohc_hdr_len);
 	}
-	else
-	{
-		bool B;
-
-		/* add replication base information for IR-CR packet only */
-		if(rohc_remain_len < 1)
-		{
-			rohc_comp_warn(context, "ROHC buffer too small for IR-CR packet: "
-			               "1 byte required for B and CRC7 fields, but only "
-			               "%zu bytes available", rohc_remain_len);
-			goto error;
-		}
-		B = !!(context->cid != context->cr_base_cid);
-
-		/* encode base CID if different from IR-CR CID */
-		if(!B)
-		{
-			rohc_remain_data[0] = 0x00;
-			rohc_comp_debug(context, "B = %d (and CRC7 = 0x00 for computation) = 0x%02x",
-			                GET_REAL(B), rohc_remain_data[0]);
-			rohc_remain_data++;
-			rohc_remain_len--;
-			rohc_hdr_len++;
-		}
-		else
-		{
-			rohc_remain_data[0] = 0x80;
-			rohc_comp_debug(context, "B = %d (and CRC7 = 0x00 for computation) = 0x%02x",
-			                GET_REAL(B), rohc_remain_data[0]);
-			rohc_remain_data++;
-			rohc_remain_len--;
-			rohc_hdr_len++;
-
-			/* code small CID */
-			if(context->compressor->medium.cid_type == ROHC_SMALL_CID)
-			{
-				if(rohc_remain_len < 1)
-				{
-					rohc_comp_warn(context, "ROHC buffer too small for IR-CR packet: "
-					               "1 byte required for small Base CID, but only "
-					               "%zu bytes available", rohc_remain_len);
-					goto error;
-				}
-				assert(context->cr_base_cid <= ROHC_SMALL_CID_MAX);
-				rohc_remain_data[0] = context->cr_base_cid;
-				rohc_comp_debug(context, "small Base CID %zu encoded as 0x%02x",
-				                context->cr_base_cid, rohc_remain_data[0]);
-				rohc_remain_data++;
-				rohc_remain_len--;
-				rohc_hdr_len++;
-			}
-		}
-
-		/* add replicate chain for IR-CR packet only */
-		ret = tcp_code_replicate_chain(context, ip, rohc_remain_data,
-		                               rohc_remain_len, payload_offset);
-		if(ret < 0)
-		{
-			rohc_comp_warn(context, "failed to build the replicate chain of the "
-			               "IR-CR packet");
-			goto error;
-		}
-#ifndef __clang_analyzer__ /* silent warning about dead in/decrement */
-		rohc_remain_data += ret;
-		rohc_remain_len -= ret;
-#endif
-		rohc_hdr_len += ret;
-		rohc_comp_dump_buf(context, "current ROHC packet (with replicate part)",
-		                   rohc_pkt, rohc_hdr_len);
-	}
-
 	/* IR(-CR|-DYN) header was successfully built, compute the CRC */
 	rohc_pkt[crc_position] = crc_calculate(ROHC_CRC_TYPE_8, rohc_pkt,
 	                                       rohc_hdr_len, CRC_INIT_8,
@@ -3010,22 +2932,6 @@ static void tcp_decide_state(struct rohc_comp_ctxt *const context,
 			next_state = ROHC_COMP_STATE_SO;
 		}
 	}
-	else if(curr_state == ROHC_COMP_STATE_CR)
-	{
-		if(context->cr_count < MAX_CR_COUNT)
-		{
-			rohc_comp_debug(context, "no enough packets transmitted in CR state "
-			                "for the moment (%zu/%d), so stay in CR state",
-			                context->cr_count, MAX_CR_COUNT);
-			next_state = ROHC_COMP_STATE_CR;
-		}
-		else
-		{
-			rohc_comp_debug(context, "enough packets transmitted in CR state (%zu/%u), "
-			                "go to SO state", context->cr_count, MAX_CR_COUNT);
-			next_state = ROHC_COMP_STATE_SO;
-		}
-	}
 	else if(curr_state == ROHC_COMP_STATE_FO)
 	{
 		if(context->fo_count < MAX_FO_COUNT)
@@ -3561,11 +3467,6 @@ static rohc_packet_t tcp_decide_packet(struct rohc_comp_ctxt *const context,
 			packet_type = ROHC_PACKET_IR;
 			context->ir_count++;
 			break;
-		case ROHC_COMP_STATE_CR: /* The Context Replication (CR) state */
-			rohc_comp_debug(context, "code IR-CR packet");
-			packet_type = ROHC_PACKET_IR_CR;
-			context->cr_count++;
-			break;
 		case ROHC_COMP_STATE_FO: /* The First Order (FO) state */
 			context->fo_count++;
 			packet_type = tcp_decide_FO_packet(context, ip_inner_context, tcp);
@@ -3615,7 +3516,7 @@ static rohc_packet_t tcp_decide_FO_packet(const struct rohc_comp_ctxt *const con
  * @param ip_inner_context  The context of the inner IP header
  * @param tcp               The TCP header to compress
  * @return                  \li The packet type among ROHC_PACKET_IR,
- *                              ROHC_PACKET_IR_CR, ROHC_PACKET_IR_DYN,
+ *                              ROHC_PACKET_IR_DYN,
  *                              ROHC_PACKET_TCP_RND_[1-8],
  *                              ROHC_PACKET_TCP_SEQ_[1-8] and
  *                              ROHC_PACKET_TCP_CO_COMMON in case of success
