@@ -279,10 +279,6 @@ rohc_status_t ROHC_EXPORT rohc_compress4(struct rohc_comp *const comp,
                                          struct rohc_buf *const rohc_packet)
 	__attribute__((warn_unused_result));
 
-bool ROHC_EXPORT rohc_comp_force_contexts_reinit(struct rohc_comp *const comp)
-	__attribute__((warn_unused_result));
-
-
 /*
  * Prototypes of public functions related to user interaction
  */

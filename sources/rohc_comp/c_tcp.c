@@ -66,10 +66,6 @@
  * Private function prototypes.
  */
 
-static bool c_tcp_create_from_ctxt(struct rohc_comp_ctxt *const ctxt,
-                                   const struct rohc_comp_ctxt *const base_ctxt)
-	__attribute__((warn_unused_result, nonnull(1, 2)));
-
 static bool c_tcp_create_from_pkt(struct rohc_comp_ctxt *const context,
                                   const struct net_pkt *const packet)
 	__attribute__((warn_unused_result, nonnull(1, 2)));
@@ -374,66 +370,6 @@ static void tcp_field_descr_present(const struct rohc_comp_ctxt *const context,
                                     const char *const name,
                                     const bool present)
 	__attribute__((nonnull(1, 2)));
-
-/**
- * @brief Create a new TCP context and initialize it thanks to the given context
- *
- * This function is one of the functions that must exist in one profile for the
- * framework to work.
- *
- * @param ctxt       The compression context to create
- * @param base_ctxt  The base context given to initialize the new context
- * @return           true if successful, false otherwise
- */
-static bool c_tcp_create_from_ctxt(struct rohc_comp_ctxt *const ctxt,
-                                   const struct rohc_comp_ctxt *const base_ctxt)
-{
-	const struct rohc_comp *const comp = ctxt->compressor;
-	const struct sc_tcp_context *const base_tcp_ctxt = base_ctxt->specific;
-	const size_t wlsb_size = sizeof(struct c_wlsb);
-	struct sc_tcp_context *tcp_ctxt;
-
-	/* create the TCP part of the profile context */
-	tcp_ctxt = malloc(sizeof(struct sc_tcp_context));
-	if(tcp_ctxt == NULL)
-	{
-		rohc_error(ctxt->compressor, ROHC_TRACE_COMP, ctxt->profile->id,
-		           "no memory for the TCP part of the profile context");
-		goto error;
-	}
-	ctxt->specific = tcp_ctxt;
-	memcpy(ctxt->specific, base_ctxt->specific, sizeof(struct sc_tcp_context));
-
-	/* keep the counter of compressed packets from the base context,
-	 * since it is used to init some compression algorithms and we
-	 * don't want the initialization to restart */
-	ctxt->num_sent_packets = base_ctxt->num_sent_packets;
-
-	/* MSN */
-	memcpy(&tcp_ctxt->msn_wlsb, &base_tcp_ctxt->msn_wlsb, wlsb_size);
-	/* IP-ID offset */
-	memcpy(&tcp_ctxt->ip_id_wlsb, &base_tcp_ctxt->ip_id_wlsb, wlsb_size);
-	/* innermost IPv4 TTL or IPv6 Hop Limit */
-	memcpy(&tcp_ctxt->ttl_hopl_wlsb, &base_tcp_ctxt->ttl_hopl_wlsb, wlsb_size);
-	/* TCP window */
-	memcpy(&tcp_ctxt->window_wlsb, &base_tcp_ctxt->window_wlsb, wlsb_size);
-	/* TCP sequence number */
-	memcpy(&tcp_ctxt->seq_wlsb, &base_tcp_ctxt->seq_wlsb, wlsb_size);
-	memcpy(&tcp_ctxt->seq_scaled_wlsb, &base_tcp_ctxt->seq_scaled_wlsb, wlsb_size);
-	/* TCP acknowledgment (ACK) number */
-	memcpy(&tcp_ctxt->ack_wlsb, &base_tcp_ctxt->ack_wlsb, wlsb_size);
-	memcpy(&tcp_ctxt->ack_scaled_wlsb, &base_tcp_ctxt->ack_scaled_wlsb, wlsb_size);
-
-	/* init the Master Sequence Number to a random value */
-	tcp_ctxt->msn = comp->random_cb(comp, comp->random_cb_ctxt) & 0xffff;
-	rohc_comp_debug(ctxt, "MSN = 0x%04x / %u", tcp_ctxt->msn, tcp_ctxt->msn);
-
-	return true;
-
-error:
-	return false;
-}
-
 
 /**
  * @brief Create a new TCP context and initialize it thanks to the given IP/TCP
@@ -4200,11 +4136,9 @@ const struct rohc_comp_profile c_tcp_profile =
 	.id             = ROHC_PROFILE_TCP, /* profile ID (see 8 in RFC 3095) */
 	.protocol       = ROHC_IPPROTO_TCP, /* IP protocol */
 	.create         = c_tcp_create_from_pkt,     /* profile handlers */
-	.clone          = c_tcp_create_from_ctxt,
 	.destroy        = c_tcp_destroy,
 	.check_profile  = c_tcp_check_profile,
 	.check_context  = c_tcp_check_context,
 	.encode         = c_tcp_encode,
-	.reinit_context = rohc_comp_reinit_context,
 };
 

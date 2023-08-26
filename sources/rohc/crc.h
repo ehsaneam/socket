@@ -75,11 +75,6 @@ uint8_t crc_calculate(const rohc_crc_type_t crc_type,
                       const uint8_t *const crc_table)
 	__attribute__((nonnull(2, 5), warn_unused_result));
 
-uint32_t crc_calc_fcs32(const uint8_t *const data,
-                        const size_t length,
-                        const uint32_t init_val)
-	__attribute__((nonnull(1), warn_unused_result, pure));
-
 uint8_t compute_crc_static(const uint8_t *const outer_ip,
                            const uint8_t *const inner_ip,
                            const uint8_t *const next_header,

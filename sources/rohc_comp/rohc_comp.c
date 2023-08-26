@@ -652,68 +652,6 @@ error:
 }
 
 /**
- * @brief Force the compressor to re-initialize all its contexts
- *
- * Make all contexts restart their initialization with decompressor, ie. they
- * go in the lowest compression state. This function can be used once the
- * ROHC channel is established again after an interruption.
- *
- * The function implements the CONTEXT_REINITIALIZATION signal described by
- * RFC 3095 at §6.3.1 as:
- * \verbatim
-   CONTEXT_REINITIALIZATION -- signal
-   This parameter triggers a reinitialization of the entire context at
-   the decompressor, both the static and the dynamic part.  The
-   compressor MUST, when CONTEXT_REINITIALIZATION is triggered, back off
-   to the IR state and fully reinitialize the context by sending IR
-   packets with both the static and dynamic chains covering the entire
-   uncompressed headers until it is reasonably confident that the
-   decompressor contexts are reinitialized.  The context
-   reinitialization MUST be done for all contexts at the compressor.
-   This parameter may for instance be used to do context relocation at,
-   e.g., a cellular handover that results in a change of compression
-   point in the radio access network.
-\endverbatim
- *
- * @param comp  The ROHC compressor
- * @return      true in case of success, false otherwise
- *
- * @ingroup rohc_comp
- */
-bool rohc_comp_force_contexts_reinit(struct rohc_comp *const comp)
-{
-	rohc_cid_t i;
-
-	if(comp == NULL)
-	{
-		goto error;
-	}
-
-	rohc_info(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-	          "force re-initialization for all %zu contexts",
-	          comp->num_contexts_used);
-
-	for(i = 0; i <= comp->medium.max_cid; i++)
-	{
-		if(comp->contexts[i].used)
-		{
-			if(!comp->contexts[i].profile->reinit_context(&(comp->contexts[i])))
-			{
-				rohc_warning(comp, ROHC_TRACE_COMP, ROHC_PROFILE_GENERAL,
-				             "failed to force re-initialization for CID %zu", i);
-				goto error;
-			}
-		}
-	}
-
-	return true;
-
-error:
-	return false;
-}
-
-
-/**
  * @brief Set the window width for the W-LSB encoding scheme
  *
  * Set the window width for the Window-based Least Significant Bits (W-LSB)
@@ -2075,25 +2013,4 @@ void rohc_comp_periodic_down_transition(struct rohc_comp_ctxt *const context,
 		context->go_back_fo_time = pkt_time;
 		context->go_back_ir_time = pkt_time;
 	}
-}
-
-
-/**
- * @brief Re-initialize the given context
- *
- * Make the context restart its initialization with decompressor, ie. it goes
- * in the lowest compression state.
- *
- * @param context  The compression context to re-initialize
- * @return         true in case of success, false otherwise
- */
-bool rohc_comp_reinit_context(struct rohc_comp_ctxt *const context)
-{
-	assert(context != NULL);
-
-	/* go back to U-mode and IR state */
-	rohc_comp_change_mode(context, ROHC_U_MODE);
-	rohc_comp_change_state(context, ROHC_COMP_STATE_IR);
-
-	return true;
 }

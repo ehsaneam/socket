@@ -220,14 +220,6 @@ struct rohc_comp_profile
 		__attribute__((warn_unused_result, nonnull(1, 2)));
 
 	/**
-	 * @brief The handler used to create the profile-specific part of the
-	 *        compression context from a given context
-	 */
-	bool (*clone)(struct rohc_comp_ctxt *const ctxt,
-                 const struct rohc_comp_ctxt *const base_ctxt)
-		__attribute__((warn_unused_result, nonnull(1, 2)));
-
-	/**
 	 * @brief The handler used to destroy the profile-specific part of the
 	 *        compression context
 	 */
@@ -271,12 +263,6 @@ struct rohc_comp_profile
 	              rohc_packet_t *const packet_type,
 	              size_t *const payload_offset)
 		__attribute__((warn_unused_result, nonnull(1, 2, 3, 5, 6)));
-
-	/**
-	 * @brief The handler used to re-initialize a context
-	 */
-	bool (*reinit_context)(struct rohc_comp_ctxt *const context)
-		__attribute__((nonnull(1), warn_unused_result));
 };
 
 
@@ -380,9 +366,6 @@ void rohc_comp_change_state(struct rohc_comp_ctxt *const context,
 void rohc_comp_periodic_down_transition(struct rohc_comp_ctxt *const context,
                                         const struct rohc_ts pkt_time)
 	__attribute__((nonnull(1)));
-
-bool rohc_comp_reinit_context(struct rohc_comp_ctxt *const context)
-	__attribute__((warn_unused_result, nonnull(1)));
 
 #endif
 
