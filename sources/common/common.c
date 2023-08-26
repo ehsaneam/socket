@@ -2,6 +2,7 @@
 
 int sc_protocols[] = {IPPROTO_TCP, IPPROTO_UDP};
 int sc_ports[] = {12345, 54321, 11111, 33333};
+int sc_rsf_flags[] = {0, 1, 2, 4};
 int sc_versions[] = {4};
 FILE *pack_file;
 
@@ -48,6 +49,12 @@ int getRandBlock()
     return (r<1);
 }
 
+int getRandSeq()
+{
+    int r = rand() % (1<<16);
+    return r;
+}
+
 const char* protocolToString(int protocol)
 {
     switch( protocol ) 
@@ -82,6 +89,21 @@ const char* stateToString(int blocked)
             return "BLOCKED";
         default:
             return "Unknown";
+    }
+}
+
+const char* rsfFlagToString(int rsf)
+{
+    switch(rsf)
+    {
+        case 1:
+            return "FIN";
+        case 2:
+            return "SYN";
+        case 4:
+            return "RST";
+        default:
+            return "";
     }
 }
 
@@ -123,6 +145,26 @@ int toState(char *str)
     else
     {
         return -1;
+    }
+}
+
+int toRsfFlag(char *str)
+{
+    if( !strcmp(str, "FIN") )
+    {
+        return 1;
+    }
+    else if( !strcmp(str, "SYN") )
+    {
+        return 2;
+    }
+    else if( !strcmp(str, "RST") )
+    {
+        return 4;
+    }
+    else
+    {
+        return 0;
     }
 }
 

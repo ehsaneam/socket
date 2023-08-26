@@ -159,23 +159,33 @@ struct udphdr* constructUdpHeader(char *buffer, Sc_packetSpec *packet_spec)
 
 struct tcphdr* constructTcpHeader(char *buffer, Sc_packetSpec *packet_spec)
 {
+    int payload_size = strlen(packet_spec->payload);
+
     struct tcphdr *tcp_header = (struct tcphdr*)(buffer);
     tcp_header->source = htons(packet_spec->port);      // Source port
     tcp_header->dest = htons(packet_spec->port);   // Destination port
-    tcp_header->seq = htonl(1);
-    tcp_header->ack_seq = 0;
+    tcp_header->seq = htonl(packet_spec->seq);
+    tcp_header->ack_seq = htonl(packet_spec->ack_seq);
     tcp_header->doff = 5;
+    tcp_header->res1 = 0;
+    // tcp_header->rsf_flags = htons(packet_spec->rsf_flag);
+    tcp_header->fin = 0;
     tcp_header->syn = 1;
+    tcp_header->rst = 0;
+    tcp_header->psh = 0;
+    tcp_header->ack = htons(packet_spec->ack_flag);
+    tcp_header->urg = 0;
+    tcp_header->res2 = 0;
     tcp_header->window = htons(65535);
     tcp_header->check = 0;
     tcp_header->urg_ptr = 0;
 
-    int payload_size = strlen(packet_spec->payload);
-
-    // Copy payload to TCP packet
     memcpy(buffer + TCP_HDR_LEN, packet_spec->payload, payload_size);
 
     tcp_header->check = calculateTcpCksum(tcp_header, payload_size);
+
+    // dumpPacket((unsigned char*)buffer, TCP_HDR_LEN, "SAGTUT");
+
     return tcp_header;
 }
 
@@ -338,10 +348,14 @@ void generatePacket(Sc_packetSpec *packet_spec)
         packet_spec->version = getRandVersion();
         packet_spec->port = getRandPort();
         packet_spec->blocked = getRandBlock();
+        packet_spec->seq = getRandSeq();
+        packet_spec->ack_seq = getRandSeq();
+        packet_spec->rsf_flag = 0;
+        packet_spec->ack_flag = 0;
     }
     else if( packet_generation_model==DUMP_PACKETS )
     {
-        char buffer[4][256];
+        char buffer[PACK_FILE_FIELDS][256];
         char line[1024];
         int ret = readLinePack(line, buffer);
         if( ret<0 )
@@ -350,7 +364,7 @@ void generatePacket(Sc_packetSpec *packet_spec)
             closeClient();
             exit(EXIT_FAILURE);
         }
-        else if( ret<4 )
+        else if( ret<PACK_FILE_FIELDS )
         {
             PRINT_ERR_SOCK("Not enough fields in row.");
             closeClient();
@@ -359,15 +373,21 @@ void generatePacket(Sc_packetSpec *packet_spec)
         packet_spec->protocol = toProtocol(buffer[0]);
         packet_spec->version  = toVersion(buffer[1]);
         packet_spec->port     = atoi(buffer[2]);
-        packet_spec->blocked  = toState(buffer[3]);
+        packet_spec->seq = atoi(buffer[3]);
+        packet_spec->ack_seq = atoi(buffer[4]);
+        packet_spec->rsf_flag = toRsfFlag(buffer[5]);
+        packet_spec->ack_flag = atoi(buffer[6]);
+        packet_spec->blocked  = toState(buffer[7]);
     }
 }
 
 void printPacket(Sc_packetSpec *packet_spec, int i)
 {
-    printf("%d,%s,%s,%d,\"%s\",%s,", 
+    printf("%d,%s,%s,%d,%d,%d,%s,%d,\"%s\",%s,", 
             i, protocolToString(packet_spec->protocol), 
             versionToString(packet_spec->version), packet_spec->port, 
+            packet_spec->seq, packet_spec->ack_seq,
+            rsfFlagToString(packet_spec->rsf_flag), packet_spec->ack_flag,
             packet_spec->payload, stateToString(packet_spec->blocked));
 }
 

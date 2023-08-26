@@ -18,6 +18,10 @@ typedef struct Sc_packetSpec
     int protocol;
     int version;
     int port;
+    int seq;
+    int ack_seq;
+    int rsf_flag;
+    int ack_flag;
     int blocked;
     const char *payload;
 }Sc_packetSpec;

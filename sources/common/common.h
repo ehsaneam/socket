@@ -26,6 +26,8 @@
 #define RANDOM_PACKETS  0
 #define DUMP_PACKETS    1
 
+#define PACK_FILE_FIELDS 8
+
 #define ETH_HDR_LEN     sizeof(struct ether_header)
 
 void dumpPacket(unsigned char *buffer, int len, const char *prompt);
@@ -39,6 +41,7 @@ int getRandPort();
 int getRandVersion();
 int getRandProtocol();
 int getRandBlock();
+int getRandSeq();
 
 const char* versionToString(int version);
 int toVersion(char *str);
@@ -46,6 +49,8 @@ const char* protocolToString(int protocol);
 int toProtocol(char *str);
 const char* stateToString(int blocked);
 int toState(char *str);
+const char* rsfFlagToString(int rsf);
+int toRsfFlag(char *str);
 
 int openPackFile(const char *path);
 int readLinePack(char *line, char (*fields)[256]);
