@@ -11,17 +11,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
 #include <linux/if_packet.h>
 #include <net/ethernet.h>
 #include <arpa/inet.h>
 
+#include "tcp.h"
+#include "udp.h"
+
 #define SOCKET_INTERFACE    "lo"
 #define SOCKET_PORT         12345
-#define DBG_INFO        3
-#define DBG_WARNING     2
-#define DBG_ERROR       1
 
 #define RANDOM_PACKETS  0
 #define DUMP_PACKETS    1

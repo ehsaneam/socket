@@ -9,8 +9,8 @@ CLIENT_DIR 	= $(SRC_DIR)/client
 COMP_DIR	= $(SRC_DIR)/rohc_comp
 SERVER_DIR 	= $(SRC_DIR)/server
 DECOMP_DIR	= $(SRC_DIR)/rohc_decomp
-INC_CLIENT 	= -I$(COMMON_DIR) -I$(ROHC_DIR) -I$(COMP_DIR)
-INC_SERVER 	= -I$(COMMON_DIR) -I$(ROHC_DIR) -I$(DECOMP_DIR)
+INC_CLIENT 	= -I$(ROHC_DIR) -I$(COMMON_DIR) -I$(COMP_DIR)
+INC_SERVER 	= -I$(ROHC_DIR) -I$(COMMON_DIR) -I$(DECOMP_DIR)
 
 # Files
 SERVER_EX  = $(DIR_OBJSER)/server
@@ -34,7 +34,7 @@ $(CLIENT_EX): $(OBJ_CLIENT)
 	$(CC) $(CFLAGS) $^ -o $@
 
 $(DIR_OBJCLI)/%.o: $(COMMON_DIR)/%.c
-	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(INC_CLIENT) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(DIR_OBJCLI)/%.o: $(ROHC_DIR)/%.c
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
@@ -50,7 +50,7 @@ $(SERVER_EX): $(OBJ_SERVER)
 	$(CC) $(CFLAGS) $^ -o $@
 
 $(DIR_OBJSER)/%.o: $(COMMON_DIR)/%.c
-	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(INC_CLIENT) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(DIR_OBJSER)/%.o: $(ROHC_DIR)/%.c
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@

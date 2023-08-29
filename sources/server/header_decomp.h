@@ -9,6 +9,10 @@
 #define BUFFER_SIZE     2048
 #define DECOMP_FAILED   -2
 
+#define DBG_INFO        3
+#define DBG_WARNING     2
+#define DBG_ERROR       1
+
 int decompressPacket(unsigned char *rohc_buffer, int rohc_len, 
                     unsigned char *ip_buffer);
 int initDecompressor(rohc_cid_type_t rohc_cid_type);

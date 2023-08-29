@@ -115,13 +115,13 @@ void extractTcp(char *buffer, int len, struct iphdr *ip_header)
     struct tcphdr *tcp_header = (struct tcphdr*)buffer;
 
     // Extract the source and destination ports
-    unsigned short src_port = ntohs(tcp_header->source);
-    unsigned short dst_port = ntohs(tcp_header->dest);
+    unsigned short src_port = ntohs(tcp_header->src_port);
+    unsigned short dst_port = ntohs(tcp_header->dst_port);
 
     if( isValidPort(src_port) || isValidPort(dst_port) )
     {
         // Calculate the TCP header length
-        int tcp_header_length = tcp_header->doff * 4;
+        int tcp_header_length = tcp_header->data_offset * 4;
 
         // Extract the TCP payload
         char* tcp_payload = buffer + tcp_header_length;

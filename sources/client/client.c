@@ -162,27 +162,27 @@ struct tcphdr* constructTcpHeader(char *buffer, Sc_packetSpec *packet_spec)
     int payload_size = strlen(packet_spec->payload);
 
     struct tcphdr *tcp_header = (struct tcphdr*)(buffer);
-    tcp_header->source = htons(packet_spec->port);      // Source port
-    tcp_header->dest = htons(packet_spec->port);   // Destination port
-    tcp_header->seq = htonl(packet_spec->seq);
-    tcp_header->ack_seq = htonl(packet_spec->ack_seq);
-    tcp_header->doff = 5;
-    tcp_header->res1 = 0;
-    // tcp_header->rsf_flags = htons(packet_spec->rsf_flag);
-    tcp_header->fin = 0;
-    tcp_header->syn = 1;
-    tcp_header->rst = 0;
-    tcp_header->psh = 0;
-    tcp_header->ack = htons(packet_spec->ack_flag);
-    tcp_header->urg = 0;
-    tcp_header->res2 = 0;
+    tcp_header->src_port = htons(packet_spec->port);      // Source port
+    tcp_header->dst_port = htons(packet_spec->port);   // Destination port
+    tcp_header->seq_num = htonl(packet_spec->seq);
+    tcp_header->ack_num = htonl(packet_spec->ack_seq);
+    tcp_header->data_offset = 5;
+    tcp_header->res_flags = 0;
+    tcp_header->rsf_flags = htons(packet_spec->rsf_flag);
+    // tcp_header->fin = 0;
+    // tcp_header->syn = 1;
+    // tcp_header->rst = 0;
+    tcp_header->psh_flag = 0;
+    tcp_header->ack_flag = htons(packet_spec->ack_flag);
+    tcp_header->urg_flag = 0;
+    tcp_header->ecn_flags = 0;
     tcp_header->window = htons(65535);
-    tcp_header->check = 0;
+    tcp_header->checksum = 0;
     tcp_header->urg_ptr = 0;
 
     memcpy(buffer + TCP_HDR_LEN, packet_spec->payload, payload_size);
 
-    tcp_header->check = calculateTcpCksum(tcp_header, payload_size);
+    tcp_header->checksum = calculateTcpCksum(tcp_header, payload_size);
 
     // dumpPacket((unsigned char*)buffer, TCP_HDR_LEN, "SAGTUT");
 

@@ -6,6 +6,10 @@
 #include "config.h"
 #include "common.h"
 
+#define DBG_INFO        3
+#define DBG_WARNING     2
+#define DBG_ERROR       1
+
 #define BUFFER_SIZE     2048
 #define DECOMP_FAILED   -2
 
