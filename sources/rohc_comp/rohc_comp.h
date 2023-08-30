@@ -332,11 +332,6 @@ bool ROHC_EXPORT rohc_comp_set_periodic_refreshes_time(struct rohc_comp *const c
                                                        const uint64_t fo_timeout)
 	__attribute__((warn_unused_result));
 
-bool ROHC_EXPORT rohc_comp_set_list_trans_nr(struct rohc_comp *const comp,
-                                             const size_t list_trans_nr)
-	__attribute__((warn_unused_result));
-
-
 /*
  * Prototypes of public functions related to ROHC compression statistics
  */

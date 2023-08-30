@@ -67,7 +67,6 @@
 
 static void ip_header_info_new(struct ip_header_info *const header_info,
                                const struct ip_packet *const ip,
-                               const size_t list_trans_nr,
                                const size_t wlsb_window_width,
                                rohc_trace_callback2_t trace_cb,
                                void *const trace_cb_priv,
@@ -253,8 +252,6 @@ static bool is_field_changed(const unsigned short changed_fields,
  *
  * @param header_info        The IP header info to initialize
  * @param ip                 The IP header
- * @param list_trans_nr      The number of uncompressed transmissions for
- *                           list compression (L)
  * @param wlsb_window_width  The width of the W-LSB sliding window for IPv4
  *                           IP-ID (must be > 0)
  * @param trace_cb           The function to call for printing traces
@@ -263,7 +260,6 @@ static bool is_field_changed(const unsigned short changed_fields,
  */
 static void ip_header_info_new(struct ip_header_info *const header_info,
                                const struct ip_packet *const ip,
-                               const size_t list_trans_nr,
                                const size_t wlsb_window_width,
                                rohc_trace_callback2_t trace_cb,
                                void *const trace_cb_priv,
@@ -274,7 +270,6 @@ static void ip_header_info_new(struct ip_header_info *const header_info,
 	assert(trace_cb_priv==NULL || trace_cb_priv!=NULL);
 	assert(header_info != NULL);
 	assert(ip != NULL);
-	assert(list_trans_nr > 0);
 	assert(wlsb_window_width > 0);
 
 	/* store the IP version in the header info */
@@ -376,7 +371,6 @@ bool rohc_comp_rfc3095_create(struct rohc_comp_ctxt *const context,
 	/* step 3 */
 	ip_header_info_new(&rfc3095_ctxt->outer_ip_flags,
 	                   &packet->outer_ip,
-	                   context->compressor->list_trans_nr,
 	                   context->compressor->wlsb_window_width,
 	                   context->compressor->trace_callback,
 	                   context->compressor->trace_callback_priv,

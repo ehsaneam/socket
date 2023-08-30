@@ -171,68 +171,6 @@ error:
 	return -1;
 }
 
-
-/**
- * @brief Update the list compression context
- *
- * Update the counter of the current list.
- * Update the counters of the items of the current list.
- * Update the reference list with the current list if possible.
- *
- * @param comp  The list compressor
- */
-void rohc_list_update_context(struct list_comp *const comp)
-{
-	size_t i;
-
-	/* nothing to do if there is no list */
-	if(comp->cur_id == ROHC_LIST_GEN_ID_NONE)
-	{
-		return;
-	}
-
-	/* the items of the current list were sent once more, increment their
-	 * counters and check whether they are known or not */
-	for(i = 0; i < comp->lists[comp->cur_id].items_nr; i++)
-	{
-		if(!comp->lists[comp->cur_id].items[i]->known)
-		{
-			comp->lists[comp->cur_id].items[i]->counter++;
-			if(comp->lists[comp->cur_id].items[i]->counter >= comp->list_trans_nr)
-			{
-				comp->lists[comp->cur_id].items[i]->known = true;
-			}
-		}
-	}
-
-	/* current list was sent once more, do we update the reference list? */
-	if(comp->cur_id != comp->ref_id)
-	{
-		comp->lists[comp->cur_id].counter++;
-		if(comp->cur_id != ROHC_LIST_GEN_ID_ANON &&
-		   comp->lists[comp->cur_id].counter >= comp->list_trans_nr)
-		{
-			if(comp->ref_id != ROHC_LIST_GEN_ID_NONE)
-			{
-				/* replace previous reference list */
-				rc_list_debug(comp, "replace the reference list (gen_id = %u) by "
-				              "current list (gen_id = %u) because it was "
-				              "transmitted at least L = %zu times",
-				              comp->ref_id, comp->cur_id, comp->list_trans_nr);
-			}
-			else
-			{
-				/* first reference list */
-				rc_list_debug(comp, "use the current list (gen_id = %u) as the "
-				              "first reference list because it was transmitted "
-				              "at least L = %zu times", comp->cur_id,
-				              comp->list_trans_nr);
-			}
-			comp->ref_id = comp->cur_id;
-		}
-	}
-}
-
 /**
  * @brief Decide the encoding type for compression list
  *

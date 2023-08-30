@@ -53,9 +53,6 @@ struct list_comp
 	unsigned int cur_id; /* TODO: should not be overwritten until compression
 	                              is fully OK */
 
-	/** The number of uncompressed transmissions for list compression (L) */
-	size_t list_trans_nr;
-
 	/* Functions for handling the data to compress */
 
 	/// @brief the handler used to get the index of an item
@@ -82,9 +79,6 @@ int rohc_list_encode(struct list_comp *const comp,
                      uint8_t *const dest,
                      int counter)
 	__attribute__((warn_unused_result, nonnull(1, 2)));
-
-void rohc_list_update_context(struct list_comp *const comp)
-	__attribute__((nonnull(1)));
 
 #endif
 

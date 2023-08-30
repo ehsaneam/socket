@@ -184,8 +184,6 @@ struct rohc_comp
 	/** The maximal delay spent in > FO states (= SO state) before changing back
 	 *  the state to FO (periodic refreshes) */
 	uint64_t periodic_refreshes_fo_timeout_time;
-	/** The number of uncompressed transmissions for list compression (L) */
-	size_t list_trans_nr;
 
 	/** The callback function used to manage traces */
 	rohc_trace_callback2_t trace_callback;
