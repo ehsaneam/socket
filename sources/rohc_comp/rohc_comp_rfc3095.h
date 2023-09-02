@@ -209,10 +209,6 @@ struct rohc_comp_rfc3095_ctxt
 	/** @brief The handler used to decide which packet to send in SO state */
 	rohc_packet_t (*decide_SO_packet)(const struct rohc_comp_ctxt *context);
 
-	/// The handler used to initialize some data just before the IR packet build
-	void (*init_at_IR)(struct rohc_comp_ctxt *const context,
-	                   const uint8_t *const next_header);
-
 	/** Determine the next SN value */
 	uint32_t (*get_next_sn)(const struct rohc_comp_ctxt *const context,
 	                        const struct net_pkt *const uncomp_pkt)
@@ -241,15 +237,6 @@ struct rohc_comp_rfc3095_ctxt
 	                         const size_t dest_max_len,
 	                         const size_t counter)
 		__attribute__((warn_unused_result, nonnull(1, 2)));
-
-	/// @brief The handler used to add an additional header in the head of the
-	///        UO-0, UO-1 and UO-2 packets
-	size_t (*code_UO_packet_head)(const struct rohc_comp_ctxt *const context,
-	                              const uint8_t *const next_header,
-	                              uint8_t *const dest,
-	                              const size_t counter,
-	                              size_t *const first_position)
-		__attribute__((warn_unused_result, nonnull(1,2, 3, 5)));
 
 	/// @brief The handler used to add an additional header in the tail of the
 	///        UO-0, UO-1 and UO-2 packets

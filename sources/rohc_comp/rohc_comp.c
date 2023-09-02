@@ -1684,7 +1684,6 @@ static struct rohc_comp_ctxt *
 	for(i = 0; i <= comp->medium.max_cid; i++)
 	{
 		size_t cr_score = 0;
-
 		context = &comp->contexts[i];
 
 		/* don't even look at unused contexts */
