@@ -31,35 +31,35 @@ all: $(SERVER_EX) $(CLIENT_EX)
 # Build rule
 $(CLIENT_EX): $(OBJ_CLIENT)
 	mkdir -p $(DIR_OBJCLI)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ -lm
 
 $(DIR_OBJCLI)/%.o: $(COMMON_DIR)/%.c
-	$(CC) $(INC_CLIENT) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(INC_CLIENT) $(CFLAGS) -MMD -MP -c $< -o $@ -lm
 
 $(DIR_OBJCLI)/%.o: $(ROHC_DIR)/%.c
-	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@ -lm
 
 $(DIR_OBJCLI)/%.o: $(COMP_DIR)/%.c
-	$(CC) $(INC_CLIENT) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(INC_CLIENT) $(CFLAGS) -MMD -MP -c $< -o $@ -lm
 
 $(DIR_OBJCLI)/%.o: $(CLIENT_DIR)/%.c
-	$(CC) $(INC_CLIENT) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(INC_CLIENT) $(CFLAGS) -MMD -MP -c $< -o $@ -lm
 
 $(SERVER_EX): $(OBJ_SERVER)
 	mkdir -p $(DIR_OBJSER)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ -lm
 
 $(DIR_OBJSER)/%.o: $(COMMON_DIR)/%.c
-	$(CC) $(INC_CLIENT) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(INC_CLIENT) $(CFLAGS) -MMD -MP -c $< -o $@ -lm
 
 $(DIR_OBJSER)/%.o: $(ROHC_DIR)/%.c
-	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@ -lm
 
 $(DIR_OBJSER)/%.o: $(DECOMP_DIR)/%.c
-	$(CC) $(INC_SERVER) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(INC_SERVER) $(CFLAGS) -MMD -MP -c $< -o $@ -lm
 
 $(DIR_OBJSER)/%.o: $(SERVER_DIR)/%.c
-	$(CC) $(INC_SERVER) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(INC_SERVER) $(CFLAGS) -MMD -MP -c $< -o $@ -lm
 
 # Include dependency files
 -include $(DEP_SERVER) $(DEP_CLIENT)

@@ -467,6 +467,8 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 
 	rohc_status_t status = ROHC_STATUS_ERROR; /* error status by default */
 
+	// getDiffTime(0);
+
 	/* check inputs validity */
 	if(comp == NULL)
 	{
@@ -511,9 +513,13 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 		                 "uncompressed data, max 100 bytes", uncomp_packet);
 	}
 
+	// printf("\ncheck-drop>>%d", getLDiffTime());
+
 	/* parse the uncompressed packet */
 	net_pkt_parse(&ip_pkt, uncomp_packet, comp->trace_callback,
 	              comp->trace_callback_priv, ROHC_TRACE_COMP);
+
+	// printf("\npkt-parse>>%d", getLDiffTime());
 
 	/* find the best context for the packet */
 	c = rohc_comp_find_ctxt(comp, &ip_pkt, -1, uncomp_packet.time);
@@ -525,6 +531,8 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 		goto error;
 	}
 
+	// printf("\nfind-context>>%d", getLDiffTime());
+
 	/* create the ROHC packet: */
 	rohc_packet->len = 0;
 
@@ -535,6 +543,9 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 		c->profile->encode(c, &ip_pkt, rohc_buf_data(*rohc_packet),
 		                   rohc_buf_avail_len(*rohc_packet),
 		                   &packet_type, &payload_offset);
+
+	// printf("\nencode>>%d", getLDiffTime());
+
 	if(rohc_hdr_size < 0)
 	{
 		/* error while compressing, use the Uncompressed profile
@@ -585,6 +596,8 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 	}
 	rohc_packet->len += rohc_hdr_size;
 
+	// printf("\nencode-fail>>%d", getLDiffTime());
+
 	/* the payload starts after the header, skip it */
 	rohc_buf_pull(rohc_packet, rohc_hdr_size);
 	payload_size = ip_pkt.len - payload_offset;
@@ -602,6 +615,8 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 				"ROHC size = %zd bytes (header = %d, payload = %zu), output "
 				"buffer size = %zu", rohc_packet->len, rohc_hdr_size,
 				payload_size, rohc_buf_avail_len(*rohc_packet));
+
+	// printf("\nwrap&map>>%d", getLDiffTime());
 
 	/* report to user that compression was successful */
 	status = ROHC_STATUS_OK;
@@ -626,6 +641,8 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 	c->total_last_compressed_size = rohc_packet->len;
 	c->header_last_uncompressed_size = payload_offset;
 	c->header_last_compressed_size = rohc_hdr_size;
+
+	// printf("\nstat>>%d\n", getLDiffTime());
 
 	/* compression is successful */
 	return status;

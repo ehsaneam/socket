@@ -28,8 +28,9 @@ int compressPacket(unsigned char *ip_buffer, int ip_len, unsigned char *rohc_buf
 	struct rohc_buf rohc_packet = rohc_buf_init_empty(rohc_buffer, BUFFER_SIZE);
 
     /* Now, compress IP packet */
+    getDiffTime();
     status = rohc_compress4(compressor, ip_packet, &rohc_packet);
-
+    printf("\ncomp>>%ld\n", getLDiffTime());
     if( status==ROHC_STATUS_OK )
 	{
         return rohc_packet.len; 

@@ -30,6 +30,7 @@
 #  include "config.h" /* for WORDS_BIGENDIAN */
 #endif
 
+struct timeval bt_last_clock;
 
 /*
  * Prototypes of private functions
@@ -142,3 +143,32 @@ static uint16_t rohc_bswap16(const uint16_t value)
 	return (((value >> 8) & 0xff) | ((value & 0xff) << 8));
 }
 
+long getDiffTime()
+{
+
+	struct timeval start, end;
+    long elapsed_time;
+
+    gettimeofday(&start, NULL);
+    gettimeofday(&end, NULL);
+
+    elapsed_time = (end.tv_sec - start.tv_sec) * 1000000 + 
+					(end.tv_usec - start.tv_usec);
+	
+    bt_last_clock.tv_sec = end.tv_sec;
+	bt_last_clock.tv_usec = end.tv_usec;
+    return elapsed_time;
+}
+
+// compare with last
+long getLDiffTime()
+{
+	struct timeval end;
+    long elapsed_time;
+    gettimeofday(&end, NULL);
+    elapsed_time = (end.tv_sec - bt_last_clock.tv_sec) * 1000000 + 
+					(end.tv_usec - bt_last_clock.tv_usec);
+    bt_last_clock.tv_sec = end.tv_sec;
+	bt_last_clock.tv_usec = end.tv_usec;
+    return elapsed_time;
+}

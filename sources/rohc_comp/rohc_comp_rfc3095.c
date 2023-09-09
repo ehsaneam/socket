@@ -2628,9 +2628,6 @@ static void detect_ip_id_behaviour(const struct rohc_comp_ctxt *const context,
 	rohc_comp_debug(context, "NBO = %d, RND = %d, SID = %d",
 	                header_info->info.v4.nbo, header_info->info.v4.rnd,
 	                header_info->info.v4.sid);
-
-error:
-	;
 }
 
 

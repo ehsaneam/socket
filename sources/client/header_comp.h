@@ -2,6 +2,7 @@
 #define __HEADER_COMP_H__
 
 #include "rohc.h"
+#include "rohc_utils.h"
 #include "rohc_comp.h"
 #include "config.h"
 #include "common.h"

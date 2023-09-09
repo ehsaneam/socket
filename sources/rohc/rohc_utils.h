@@ -27,7 +27,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
+#include <sys/time.h>
+#include <math.h>
+#include <stddef.h>
 
 /** TODO */
 typedef enum
@@ -59,6 +61,8 @@ uint32_t rohc_hton32(const uint32_t host32)
 uint16_t rohc_hton16(const uint16_t host16)
 	__attribute__((warn_unused_result, const));
 
+long getDiffTime();
+long getLDiffTime();
 
 /**
  * @brief Convert the given boolean value to one unsigned integer
