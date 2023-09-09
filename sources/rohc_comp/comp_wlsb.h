@@ -128,13 +128,5 @@ size_t wlsb_get_kp_32bits(const struct c_wlsb *const wlsb,
                           const rohc_lsb_shift_t p)
 	__attribute__((warn_unused_result, nonnull(1)));
 
-size_t wlsb_ack(struct c_wlsb *const wlsb,
-                const uint32_t sn_bits,
-                const size_t sn_bits_nr)
-	__attribute__((warn_unused_result, nonnull(1)));
-
-bool wlsb_is_sn_present(struct c_wlsb *const wlsb, const uint32_t sn)
-	__attribute__((warn_unused_result, nonnull(1)));
-
 #endif
 
