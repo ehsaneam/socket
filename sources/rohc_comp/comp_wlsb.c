@@ -42,13 +42,6 @@ static size_t wlsb_get_minkp_32bits(const struct c_wlsb *const wlsb,
                                     const rohc_lsb_shift_t p)
 	__attribute__((warn_unused_result, nonnull(1)));
 
-static size_t wlsb_get_next_older(const size_t entry, const size_t max)
-	__attribute__((warn_unused_result, const));
-
-static size_t wlsb_ack_remove(struct c_wlsb *const wlsb, const size_t pos)
-	__attribute__((warn_unused_result, nonnull(1)));
-
-
 /*
  * Public functions
  */
@@ -208,7 +201,6 @@ size_t wlsb_get_kp_8bits(const struct c_wlsb *const wlsb,
 		}
 		bits_nr = k;
 	}
-
 	return bits_nr;
 }
 
@@ -353,7 +345,6 @@ size_t wlsb_get_minkp_16bits(const struct c_wlsb *const wlsb,
 		}
 		bits_nr = k;
 	}
-
 	return bits_nr;
 }
 

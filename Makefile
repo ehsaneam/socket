@@ -1,5 +1,5 @@
 CC 		 	= gcc
-CFLAGS 	 	= -Wall -Werror -Wextra
+CFLAGS 	 	= -Wall -Werror -Wextra -pg
 SRC_DIR  	= sources
 DIR_OBJSER 	= build_server
 DIR_OBJCLI	= build_client
