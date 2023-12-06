@@ -84,6 +84,12 @@ void c_field_scaling(uint32_t *const scaled_value,
                      const uint32_t unscaled_value)
 	__attribute__((nonnull(1, 2)));
 
+void c_field_scaling2(uint32_t *const scaled_value,
+                     uint32_t *const residue_field,
+                     const uint32_t scaling_factor,
+                     const uint32_t unscaled_value)
+	__attribute__((nonnull(1, 2)));
+
 // RFC4996 page 71
 bool rsf_index_enc_possible(const uint8_t rsf_flags)
 	__attribute__((warn_unused_result, const));

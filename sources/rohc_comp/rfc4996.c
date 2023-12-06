@@ -364,6 +364,36 @@ void c_field_scaling(uint32_t *const scaled_value,
 	}
 }
 
+void c_field_scaling2(uint32_t *const scaled_value,
+                     uint32_t *const residue_field,
+                     const uint32_t scaling_factor,
+                     const uint32_t unscaled_value)
+{
+	if(scaling_factor == 0)
+	{
+		*residue_field = unscaled_value;
+		*scaled_value = 0;
+	}
+	else
+	{
+		uint32_t sf = 1;
+		for( uint32_t i=0 ; i<32 ; i++ )
+		{
+			if( sf>=scaling_factor )
+			{
+				break;
+			}
+			sf = sf << 1;
+		}
+		// *residue_field = unscaled_value % scaling_factor;
+		// *scaled_value = unscaled_value / scaling_factor;
+		*scaled_value = unscaled_value >> sf;
+		uint32_t temp = *scaled_value << sf;
+		*residue_field = unscaled_value - temp;
+		assert(unscaled_value ==
+		       (((*scaled_value) * scaling_factor) + (*residue_field)));
+	}
+}
 
 /**
  * @brief Is is possible to use the rsf_index_enc encoding?

@@ -2791,8 +2791,23 @@ static bool d_tcp_decode_bits_tcp_hdr(const struct rohc_decomp_ctxt *const conte
 			                 "for a packet with an empty payload");
 			goto error;
 		}
-		decoded->seq_num = decoded->seq_num_scaled * payload_len +
+		
+		/////////////////////////////////////////////////////////
+		uint32_t sf = 1;
+		for( uint32_t i=0 ; i<32 ; i++ )
+		{
+			if( sf>=payload_len )
+			{
+				break;
+			}
+			sf = sf << 1;
+		}
+		decoded->seq_num = (decoded->seq_num_scaled << sf) +
 		                   tcp_context->seq_num_residue;
+		/////////////////////////////////////////////////////////
+
+		// decoded->seq_num = decoded->seq_num_scaled * payload_len +
+		//                    tcp_context->seq_num_residue;
 		rohc_decomp_debug(context, "  seq_number_scaled = 0x%x, payload size = %zu, "
 		                  "seq_number_residue = 0x%x -> seq_number = 0x%x",
 		                  decoded->seq_num_scaled, payload_len,
@@ -2835,8 +2850,23 @@ static bool d_tcp_decode_bits_tcp_hdr(const struct rohc_decomp_ctxt *const conte
 		/* compute scaled sequence number & residue */
 		if(payload_len != 0)
 		{
-			decoded->seq_num_scaled = decoded->seq_num / payload_len;
-			decoded->seq_num_residue = decoded->seq_num % payload_len;
+			////////////////////////////////////////////////////////
+			uint32_t sf = 1;
+			for( uint32_t i=0 ; i<32 ; i++ )
+			{
+				if( sf>=payload_len )
+				{
+					break;
+				}
+				sf = sf << 1;
+			}
+			decoded->seq_num_scaled = decoded->seq_num << sf;
+			uint32_t temp = decoded->seq_num_scaled << sf;
+			decoded->seq_num_residue = decoded->seq_num - temp;
+			////////////////////////////////////////////////////////
+			
+			// decoded->seq_num_scaled = decoded->seq_num / payload_len;
+			// decoded->seq_num_residue = decoded->seq_num % payload_len;
 			rohc_decomp_debug(context, "  TCP sequence number (0x%08x) = "
 			                  "scaled (0x%x) * payload size (%zu) + residue (0x%x)",
 			                  decoded->seq_num, decoded->seq_num_scaled, payload_len,
@@ -2881,8 +2911,21 @@ static bool d_tcp_decode_bits_tcp_hdr(const struct rohc_decomp_ctxt *const conte
 			                 "number for a packet with a zero ack_stride");
 			goto error;
 		}
-		decoded->ack_num = decoded->ack_num_scaled * decoded->ack_stride +
-		                   decoded->ack_num_residue;
+		//////////////////////////////////////////////////
+		uint32_t sf = 1;
+		for( uint32_t i=0 ; i<32 ; i++ )
+		{
+			if( sf>=decoded->ack_stride )
+			{
+				break;
+			}
+			sf = sf << 1;
+		}
+		decoded->ack_num = (decoded->ack_num_scaled << sf) + decoded->ack_num_residue;
+		//////////////////////////////////////////////////
+
+		// decoded->ack_num = decoded->ack_num_scaled * decoded->ack_stride +
+		//                    decoded->ack_num_residue;
 		rohc_decomp_debug(context, "  ack_number_scaled = 0x%08x, ack_stride = 0x%04x, "
 		                  "ack_number_residue = 0x%04x -> ack_number = 0x%08x",
 		                  decoded->ack_num_scaled, decoded->ack_stride,
@@ -2942,8 +2985,21 @@ static bool d_tcp_decode_bits_tcp_hdr(const struct rohc_decomp_ctxt *const conte
 		/* compute scaled acknowledgement residue */
 		if(decoded->ack_stride != 0)
 		{
-			decoded->ack_num_scaled = decoded->ack_num / decoded->ack_stride;
-			decoded->ack_num_residue = decoded->ack_num % decoded->ack_stride;
+			//////////////////////////////////////////////////
+			uint32_t sf = 1;
+			for( uint32_t i=0 ; i<32 ; i++ )
+			{
+				if( sf>=decoded->ack_stride )
+				{
+					break;
+				}
+				sf = sf << 1;
+			}
+			decoded->ack_num_scaled = decoded->ack_num >> sf;
+			uint32_t temp = decoded->ack_num_scaled << sf;
+			decoded->ack_num_residue = decoded->ack_num - temp;
+			// decoded->ack_num_scaled = decoded->ack_num / decoded->ack_stride;
+			// decoded->ack_num_residue = decoded->ack_num % decoded->ack_stride;
 			rohc_decomp_debug(context, "  TCP ACK number (0x%08x) = scaled (0x%08x) "
 			                  "* ack_stride (0x%04x) = residue (0x%04x)",
 			                  decoded->ack_num, decoded->ack_num_scaled,

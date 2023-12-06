@@ -3225,7 +3225,7 @@ static bool tcp_encode_uncomp_tcp_fields(struct rohc_comp_ctxt *const context,
 		uint32_t seq_num_scaled;
 		uint32_t seq_num_residue;
 
-		c_field_scaling(&seq_num_scaled, &seq_num_residue, seq_num_factor,
+		c_field_scaling2(&seq_num_scaled, &seq_num_residue, seq_num_factor,
 		                seq_num_hbo);
 		rohc_comp_debug(context, "seq_num = 0x%x, scaled = 0x%x, factor = %zu, "
 		                "residue = 0x%x", seq_num_hbo, seq_num_scaled,
@@ -3304,7 +3304,7 @@ static bool tcp_encode_uncomp_tcp_fields(struct rohc_comp_ctxt *const context,
 		}
 
 		/* compute new scaled ACK number & residue */
-		c_field_scaling(&ack_num_scaled, &ack_num_residue, ack_stride, ack_num_hbo);
+		c_field_scaling2(&ack_num_scaled, &ack_num_residue, ack_stride, ack_num_hbo);
 		rohc_comp_debug(context, "ack_number = 0x%x, scaled = 0x%x, factor = %u, "
 		                "residue = 0x%x", ack_num_hbo, ack_num_scaled,
 		                ack_stride, ack_num_residue);
