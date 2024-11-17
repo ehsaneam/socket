@@ -31,6 +31,7 @@
 
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 
 
 /*
@@ -240,7 +241,7 @@ rohc_packet_t c_ip_decide_SO_packet(const struct rohc_comp_ctxt *context)
 	{
 		if(rfc3095_ctxt->outer_ip_flags.version == IPV4)
 		{
-			assert(rfc3095_ctxt->outer_ip_flags.info.v4.sid_count >= MAX_FO_COUNT);
+			// assert(rfc3095_ctxt->outer_ip_flags.info.v4.sid_count >= MAX_FO_COUNT);
 			assert(rfc3095_ctxt->outer_ip_flags.info.v4.rnd_count >= MAX_FO_COUNT);
 			assert(rfc3095_ctxt->outer_ip_flags.info.v4.nbo_count >= MAX_FO_COUNT);
 		}

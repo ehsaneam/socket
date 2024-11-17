@@ -28,7 +28,7 @@
 
 #include <stdint.h>
 #include <assert.h>
-
+#include <stdio.h>
 
 /*
  * Prototypes of private functions

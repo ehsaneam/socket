@@ -63,7 +63,7 @@ int initCompressor(rohc_cid_type_t rohc_cid_type)
 
     /* Enable the compression profiles you need */
 	PRINT_INFO_ROHC("enable ROHC compression profile\n");
-    if( !rohc_comp_enable_profiles(compressor, ROHC_PROFILE_UNCOMPRESSED, 
+    if( !rohc_comp_enable_profiles(compressor, ROHC_PROFILE_UNCOMPRESSED, ROHC_PROFILE_UDP,
                                 ROHC_PROFILE_IP, ROHC_PROFILE_TCP, -1) )
 	{
 		PRINT_ERR_ROHC("failed to enable the TCP/IP profile\n");

@@ -31,6 +31,8 @@
 
 #include "tcp.h"
 
+#define ACK_DELTAS_WIDTH 16
+
 /**
  * @brief Define the TCP-specific temporary variables in the profile
  *        compression context.
@@ -203,7 +205,7 @@ struct sc_tcp_context
 	struct c_wlsb ack_scaled_wlsb;
 
 	size_t ack_deltas_next;
-	uint16_t ack_deltas_width[20];
+	uint16_t ack_deltas_width[ACK_DELTAS_WIDTH];
 	uint16_t ack_stride;
 	uint32_t ack_num_scaled;
 	uint16_t ack_num_residue;

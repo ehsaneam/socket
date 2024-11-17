@@ -14,5 +14,6 @@ void extractTcp(char *buffer, int bytes_read, struct iphdr *ip_header);
 void extractUdp(char *buffer, int bytes_read, struct iphdr *ip_header);
 void openSocket();
 void setVerbose(int verbose_level);
+char* find_str(char *phrase, char *word, int total_size);
 
 #endif //__SERVER_H__

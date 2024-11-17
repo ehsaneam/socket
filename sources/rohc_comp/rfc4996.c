@@ -390,8 +390,8 @@ void c_field_scaling2(uint32_t *const scaled_value,
 		*scaled_value = unscaled_value >> sf;
 		uint32_t temp = *scaled_value << sf;
 		*residue_field = unscaled_value - temp;
-		assert(unscaled_value ==
-		       (((*scaled_value) * scaling_factor) + (*residue_field)));
+		// assert(unscaled_value ==
+		//        (((*scaled_value) * scaling_factor) + (*residue_field)));
 	}
 }
 

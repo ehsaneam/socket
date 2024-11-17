@@ -835,6 +835,137 @@ static int c_tcp_encode(struct rohc_comp_ctxt *const context,
 	const struct tcphdr *tcp;
 	int counter;
 
+	/////////////////////////////////////////////////////////////////////
+	// printf("|msn:%hu, ecn-usd:%d, ecn0-cnt:%lu, ecn-chng:%lu, ttl-chng:%lu, "
+	// 		"tcp-win-chng:%lu, seq-chng:%d, seq-fac:%lu, seq-res:%u, seq-scl:%u, "
+	// 		"seq-scl-nr:%lu, "
+	// 		"ack-str:%hu, ack-dlt-nxt:%lu, ack-res:%hu, ack-scl-nr:%lu, "
+	// 		"last-bhv:%hhu, bhv:%hhu, ipid:%hu, ttl:%hhu, dscp:%hhu, "
+	// 		"old-res:%hhu, old-ack:%hhu, old-urg:%hhu, old-win:%hu, old-seq-num:%u, "
+	// 		"old-ack-num:%u, "
+	// 		"msn-wlsb-cnt:%lu, msn-wlsb-ww:%lu, msn-wlsb-old:%lu, msn-wlsb-nxt:%lu, "
+	// 		"msn-wlsb-p:%u, id-wlsb-cnt:%lu, id-wlsb-ww:%lu, id-wlsb-old:%lu, "
+	// 		"id-wlsb-nxt:%lu, id-wlsb-p:%u, ttl-wlsb-cnt:%lu, ttl-wlsb-ww:%lu, "
+	// 		"ttl-wlsb-old:%lu, ttl-wlsb-nxt:%lu, ttl-wlsb-p:%u, win-wlsb-cnt:%lu, "
+	// 		"win-wlsb-ww:%lu, win-wlsb-old:%lu, win-wlsb-nxt:%lu, win-wlsb-p:%u, "
+	// 		"seq-wlsb-cnt:%lu, seq-wlsb-ww:%lu, seq-wlsb-old:%lu, "
+	// 		"seq-wlsb-nxt:%lu, seq-wlsb-p:%u, sqsc-wlsb-cnt:%lu, "
+	// 		"sqsc-wlsb-ww:%lu, sqsc-wlsb-old:%lu, sqsc-wlsb-nxt:%lu, "
+	// 		"sqsc-wlsb-p:%u, ack-wlsb-cnt:%lu, ack-wlsb-ww:%lu, "
+	// 		"ack-wlsb-old:%lu, ack-wlsb-nxt:%lu, ack-wlsb-p:%u, aksc-wlsb-cnt:%lu, "
+	// 		"aksc-wlsb-ww:%lu, aksc-wlsb-old:%lu, aksc-wlsb-nxt:%lu, "
+	// 		"aksc-wlsb-p:%u, "
+	// 		"uncmp-len:%lu, ip-len:%lu, sec:%lu, ns:%lu, "
+	// 		"num_pkt:%d, state:%u, mode:%u, ircnt:%lu, focnt:%lu, cid:%lu, pid:%d, "
+	// 		"go-ircnt:%lu, go-focnt:%lu, ref-ircnt:%lu, ref-focnt:%lu, "
+	// 		"ref-irtime:%lu, ref-fo-time:%lu, feat:%u, ir-sec:%lu, "
+	// 		"ir-ns:%lu, fo-sec:%lu, fo-ns:%lu, rohc-max-len:%lu, "
+	// 		"data:", 
+	// 		tcp_context->msn, tcp_context->ecn_used,
+	// 		tcp_context->ecn_used_zero_count, tcp_context->ecn_used_change_count,
+	// 		tcp_context->ttl_hopl_change_count, tcp_context->tcp_window_change_count,
+	// 		tcp_context->tcp_seq_num_change_count,
+	// 		tcp_context->seq_num_factor, tcp_context->seq_num_residue,
+	// 		tcp_context->seq_num_scaled, tcp_context->seq_num_scaling_nr,
+	// 		tcp_context->ack_stride, tcp_context->ack_deltas_next,
+	// 		tcp_context->ack_num_residue, tcp_context->ack_num_scaling_nr,
+	// 		tcp_context->ip_contexts[0].ctxt.v4.last_ip_id_behavior, 
+	// 		tcp_context->ip_contexts[0].ctxt.v4.ip_id_behavior, 
+	// 		tcp_context->ip_contexts[0].ctxt.v4.last_ip_id, 
+	// 		tcp_context->ip_contexts[0].ctxt.v4.ttl_hopl, 
+	// 		tcp_context->ip_contexts[0].ctxt.v4.dscp, 
+	// 		tcp_context->old_tcphdr.res_flags, tcp_context->old_tcphdr.ack_flag,
+	// 		tcp_context->old_tcphdr.urg_flag, tcp_context->old_tcphdr.window,
+	// 		tcp_context->old_tcphdr.seq_num, tcp_context->old_tcphdr.ack_num, 
+	// 		tcp_context->msn_wlsb.count, tcp_context->msn_wlsb.window_width,
+	// 		tcp_context->msn_wlsb.oldest, tcp_context->msn_wlsb.next,
+	// 		tcp_context->msn_wlsb.p,
+	// 		tcp_context->ip_id_wlsb.count, tcp_context->ip_id_wlsb.window_width,
+	// 		tcp_context->ip_id_wlsb.oldest, tcp_context->ip_id_wlsb.next,
+	// 		tcp_context->ip_id_wlsb.p,
+	// 		tcp_context->ttl_hopl_wlsb.count, tcp_context->ttl_hopl_wlsb.window_width,
+	// 		tcp_context->ttl_hopl_wlsb.oldest, tcp_context->ttl_hopl_wlsb.next,
+	// 		tcp_context->ttl_hopl_wlsb.p,
+	// 		tcp_context->window_wlsb.count, tcp_context->window_wlsb.window_width,
+	// 		tcp_context->window_wlsb.oldest, tcp_context->window_wlsb.next,
+	// 		tcp_context->window_wlsb.p,
+	// 		tcp_context->seq_wlsb.count, tcp_context->seq_wlsb.window_width,
+	// 		tcp_context->seq_wlsb.oldest, tcp_context->seq_wlsb.next,
+	// 		tcp_context->seq_wlsb.p,
+	// 		tcp_context->seq_scaled_wlsb.count, tcp_context->seq_scaled_wlsb.window_width,
+	// 		tcp_context->seq_scaled_wlsb.oldest, tcp_context->seq_scaled_wlsb.next,
+	// 		tcp_context->seq_scaled_wlsb.p,
+	// 		tcp_context->ack_wlsb.count, tcp_context->ack_wlsb.window_width,
+	// 		tcp_context->ack_wlsb.oldest, tcp_context->ack_wlsb.next,
+	// 		tcp_context->ack_wlsb.p,
+	// 		tcp_context->ack_scaled_wlsb.count, tcp_context->ack_scaled_wlsb.window_width,
+	// 		tcp_context->ack_scaled_wlsb.oldest, tcp_context->ack_scaled_wlsb.next,
+	// 		tcp_context->ack_scaled_wlsb.p,
+	// 		uncomp_pkt->len, uncomp_pkt->outer_ip.size, 
+	// 		uncomp_pkt->time.sec, uncomp_pkt->time.nsec, 
+	// 		context->num_sent_packets, context->state, context->mode, 
+	// 		context->ir_count, context->fo_count, context->cid, context->profile->id,
+	// 		context->go_back_ir_count, context->go_back_fo_count,
+	// 		context->compressor->periodic_refreshes_ir_timeout_pkts,
+	// 		context->compressor->periodic_refreshes_fo_timeout_pkts,
+	// 		context->compressor->periodic_refreshes_ir_timeout_time,
+	// 		context->compressor->periodic_refreshes_fo_timeout_time,
+	// 		context->compressor->features, 
+	// 		context->go_back_ir_time.sec, context->go_back_ir_time.nsec, 
+	// 		context->go_back_fo_time.sec, context->go_back_fo_time.nsec,
+	// 		rohc_pkt_max_len);
+
+	// for( size_t i=0 ; i<uncomp_pkt->outer_ip.size ; i++ )
+	// {
+	// 	printf("%hhu ", uncomp_pkt->outer_ip.data[i]);
+	// }
+
+	// printf("wlsb:");
+	// for( size_t i=0 ; i<4 ; i++ )
+	// {
+	// 	printf("%u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u "
+	// 		   "%u %u %u ", 
+	// 		tcp_context->msn_wlsb.window[i].used,
+	// 		tcp_context->msn_wlsb.window[i].sn, 
+	// 		tcp_context->msn_wlsb.window[i].value,
+	// 		tcp_context->ip_id_wlsb.window[i].used,
+	// 		tcp_context->ip_id_wlsb.window[i].sn, 
+	// 		tcp_context->ip_id_wlsb.window[i].value,
+	// 		tcp_context->ttl_hopl_wlsb.window[i].used,
+	// 		tcp_context->ttl_hopl_wlsb.window[i].sn, 
+	// 		tcp_context->ttl_hopl_wlsb.window[i].value,
+	// 		tcp_context->window_wlsb.window[i].used,
+	// 		tcp_context->window_wlsb.window[i].sn, 
+	// 		tcp_context->window_wlsb.window[i].value,
+	// 		tcp_context->seq_wlsb.window[i].used,
+	// 		tcp_context->seq_wlsb.window[i].sn, 
+	// 		tcp_context->seq_wlsb.window[i].value,
+	// 		tcp_context->seq_scaled_wlsb.window[i].used,
+	// 		tcp_context->seq_scaled_wlsb.window[i].sn, 
+	// 		tcp_context->seq_scaled_wlsb.window[i].value,
+	// 		tcp_context->ack_wlsb.window[i].used,
+	// 		tcp_context->ack_wlsb.window[i].sn, 
+	// 		tcp_context->ack_wlsb.window[i].value,
+	// 		tcp_context->ack_scaled_wlsb.window[i].used,
+	// 		tcp_context->ack_scaled_wlsb.window[i].sn, 
+	// 		tcp_context->ack_scaled_wlsb.window[i].value);
+	// }
+
+	// printf("ack-deltas-wdth:");
+	// for( size_t i=0 ; i<ACK_DELTAS_WIDTH ; i++ )
+	// {
+	// 	printf("%hu ", tcp_context->ack_deltas_width[i]);
+	// }
+
+	// printf("crc:");
+	// for( size_t i=0 ; i<256 ; i++ )
+	// {
+	// 	printf("%hhu %hhu %hhu ", context->compressor->crc_table_3[i],
+	// 			context->compressor->crc_table_7[i], 
+	// 			context->compressor->crc_table_8[i]);
+	// }
+	/////////////////////////////////////////////////////////////////////
+
 	assert(rohc_pkt != NULL);
 
 	*packet_type = ROHC_PACKET_UNKNOWN;
@@ -945,6 +1076,13 @@ static int c_tcp_encode(struct rohc_comp_ctxt *const context,
 		}
 	}
 
+	// printf("rohc_len:%d, p_type:%u, rohc-data: ", counter, *packet_type);
+	// for( int i=0 ; i<counter ; i++ )
+	// {
+	// 	printf("%hhu ", rohc_pkt[i]);
+	// }
+	// printf("|\n");
+	
 	return counter;
 
 error:
@@ -1143,7 +1281,6 @@ static int code_CO_packet(struct rohc_comp_ctxt *const context,
 
 	const uint8_t *remain_data = ip->data;
 	size_t remain_len = ip->size;
-
 	uint8_t *rohc_remain_data = rohc_pkt;
 	size_t rohc_remain_len = rohc_pkt_max_len;
 
@@ -2967,7 +3104,7 @@ static bool tcp_encode_uncomp_ip_fields(struct rohc_comp_ctxt *const context,
 	const uint8_t *remain_data = uncomp_pkt->data;
 	size_t remain_len = uncomp_pkt->len;
 
-	const ip_context_t *inner_ip_ctxt = NULL;
+	const ip_context_t *inner_ip_ctxt = &(tcp_context->ip_contexts[0]);
 	const uint8_t *inner_ip_hdr = NULL;
 	ip_version inner_ip_version = IP_UNKNOWN;
 
@@ -3154,6 +3291,45 @@ static bool tcp_encode_uncomp_tcp_fields(struct rohc_comp_ctxt *const context,
                                          const struct tcphdr *const tcp)
 {
 	struct sc_tcp_context *const tcp_context = context->specific;
+
+	// printf("|seq_num:%u, ack_num:%u, ack_flag:%hhu, tcp->urg_flag:%hhu, tcp_win:%hu, "
+	// 	   "old_ack_flag:%hhu, old_urg_flag:%hhu, old_tcp_win:%hu, win_chng_cnt:%lu, "
+	// 	   "msn:%hu, len:%lu, num_sent_packets:%d, seq_fac:%lu, seq_res:%u, "
+	// 	   "old_ack_num:%u, ack_std:%hu, ack_next:%lu, ack_res:%hu, old_seq_num:%u, "
+	// 	   "seq_scal:%lu, seq_scaled:%u, ack_scal:%lu, ack_scaled:%u, "
+	// 	   "win_wlsb_w:%lu, win_wlsb_old:%lu, win_wlsb_nxt:%lu, win_wlsb_cnt:%lu, "
+	// 	   "seq_wlsb_p:%d, seq_wlsb_cnt:%lu, ack_wlsb_cnt:%lu, ack_sca_wlsb_p:%d, "
+	// 	   "ack_sca_wlsb_cnt:%lu, ",
+	// 		tcp->seq_num, tcp->ack_num, tcp->ack_flag, tcp->urg_flag, tcp->window,
+	// 		tcp_context->old_tcphdr.ack_flag, tcp_context->old_tcphdr.urg_flag,
+	// 		tcp_context->old_tcphdr.window, tcp_context->tcp_window_change_count,
+	// 		tcp_context->msn, tcp_context->tmp.payload_len, context->num_sent_packets,
+	// 		tcp_context->seq_num_factor, tcp_context->seq_num_residue,
+	// 		tcp_context->old_tcphdr.ack_num, tcp_context->ack_stride,
+	// 		tcp_context->ack_deltas_next, tcp_context->ack_num_residue,
+	// 		tcp_context->old_tcphdr.seq_num, tcp_context->seq_num_scaling_nr,
+	// 		tcp_context->seq_num_scaled, tcp_context->ack_num_scaling_nr,
+	// 		tcp_context->ack_num_scaled, tcp_context->window_wlsb.window_width, 
+	// 		tcp_context->window_wlsb.oldest, tcp_context->window_wlsb.next, 
+	// 		tcp_context->window_wlsb.count, tcp_context->seq_scaled_wlsb.p,
+	// 		tcp_context->seq_scaled_wlsb.count, tcp_context->ack_wlsb.count, 
+	// 		tcp_context->ack_scaled_wlsb.p, tcp_context->ack_scaled_wlsb.count);
+
+	// for( int i=0 ; i<16 ; i++ )
+	// {
+	// 	printf("(%d,%u,%u)-(%d,%u)-(%d,%u)-(%d,%u)-(%hu)", 
+	// 			tcp_context->window_wlsb.window[i].used,
+	// 			tcp_context->window_wlsb.window[i].sn, 
+	// 			tcp_context->window_wlsb.window[i].value, 
+	// 			tcp_context->seq_scaled_wlsb.window[i].used,
+	// 			tcp_context->seq_scaled_wlsb.window[i].value,
+	// 			tcp_context->ack_wlsb.window[i].used, 
+	// 			tcp_context->ack_wlsb.window[i].value,
+	// 			tcp_context->ack_scaled_wlsb.window[i].used,
+	// 			tcp_context->ack_scaled_wlsb.window[i].value,
+	// 			tcp_context->ack_deltas_width[i]);
+	// }
+
 	const uint32_t seq_num_hbo = rohc_ntoh32(tcp->seq_num);
 	const uint32_t ack_num_hbo = rohc_ntoh32(tcp->ack_num);
 
@@ -3273,17 +3449,17 @@ static bool tcp_encode_uncomp_tcp_fields(struct rohc_comp_ctxt *const context,
 
 			/* TODO: should update context at the very end only */
 			tcp_context->ack_deltas_width[tcp_context->ack_deltas_next] = ack_delta;
-			tcp_context->ack_deltas_next = (tcp_context->ack_deltas_next + 1) % 20;
+			tcp_context->ack_deltas_next = (tcp_context->ack_deltas_next + 1) % ACK_DELTAS_WIDTH;
 
-			for(i = 0; i < 20; i++)
+			for(i = 0; i < ACK_DELTAS_WIDTH; i++)
 			{
 				const uint16_t val =
-					tcp_context->ack_deltas_width[(tcp_context->ack_deltas_next + i) % 20];
+					tcp_context->ack_deltas_width[(tcp_context->ack_deltas_next + i) % ACK_DELTAS_WIDTH];
 				size_t val_count = 1;
 
-				for(j = i + 1; j < 20; j++)
+				for(j = i + 1; j < ACK_DELTAS_WIDTH; j++)
 				{
-					if(val == tcp_context->ack_deltas_width[(tcp_context->ack_deltas_next + j) % 20])
+					if(val == tcp_context->ack_deltas_width[(tcp_context->ack_deltas_next + j) % ACK_DELTAS_WIDTH])
 					{
 						val_count++;
 					}
@@ -3293,14 +3469,15 @@ static bool tcp_encode_uncomp_tcp_fields(struct rohc_comp_ctxt *const context,
 				{
 					ack_stride = val;
 					ack_stride_count = val_count;
-					if(ack_stride_count > (20/2))
+					if(ack_stride_count > (ACK_DELTAS_WIDTH/2))
 					{
 						break;
 					}
 				}
 			}
 			rohc_comp_debug(context, "ack_stride 0x%04x was used %zu times in the "
-			                "last 20 packets", ack_stride, ack_stride_count);
+			                "last %d packets", ack_stride, ack_stride_count,
+							ACK_DELTAS_WIDTH);
 		}
 
 		/* compute new scaled ACK number & residue */
@@ -3371,6 +3548,24 @@ static bool tcp_encode_uncomp_tcp_fields(struct rohc_comp_ctxt *const context,
 		                "ACK number 0x%08x", tcp_context->tmp.nr_ack_scaled_bits,
 		                tcp_context->ack_num_scaled);
 	}
+
+	// printf("ack_chg:%d, urg_prs:%d, urg_chg:%d, win_chg:%lu, win_bits:%lu, len:%lu, "
+	// 	   "win_cnt:%lu, seq_sn:%lu, ack_sn:%lu, seq_scl:%u, seq_res:%u, "
+	// 	   "seq_fac:%lu, ack_dnex:%lu, ack_scl:%u, ack_res:%hu, ack_str:%hu, "
+	// 	   "seq_chg:%d, seq_bit:%lu, ack_chg:%d, ack_bit:%lu, ack_sca:%lu|\n", 
+	// 		tcp_context->tmp.tcp_ack_flag_changed,
+	// 		tcp_context->tmp.tcp_urg_flag_present,
+	// 		tcp_context->tmp.tcp_urg_flag_changed,
+	// 		tcp_context->tmp.tcp_window_changed, 
+	// 		tcp_context->tmp.nr_window_bits_16383, tcp_context->tmp.payload_len,
+	// 		tcp_context->tcp_window_change_count, tcp_context->seq_num_scaling_nr,
+	// 		tcp_context->ack_num_scaling_nr, tcp_context->seq_num_scaled,
+	// 		tcp_context->seq_num_residue, tcp_context->seq_num_factor,
+	// 		tcp_context->ack_deltas_next, tcp_context->ack_num_scaled,
+	// 		tcp_context->ack_num_residue, tcp_context->ack_stride, 
+	// 		tcp_context->tmp.tcp_seq_num_changed, tcp_context->tmp.nr_seq_scaled_bits,
+	// 		tcp_context->tmp.tcp_ack_num_changed, tcp_context->tmp.nr_ack_bits_16383,
+	// 		tcp_context->tmp.nr_ack_scaled_bits);
 
 	return true;
 }

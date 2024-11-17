@@ -53,6 +53,7 @@
 #include "crc.h"
 #include "udp.h"
 #include "ip_numbers.h"
+#include "c_tcp_defines.h"
 
 #include "config.h" /* for PACKAGE_(NAME|URL|VERSION) */
 
@@ -467,6 +468,16 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 
 	rohc_status_t status = ROHC_STATUS_ERROR; /* error status by default */
 
+	//////////////////////////////////////////////////////////////////////////
+
+	printf("len:%lu, sec:%lu, uncomp_data:", uncomp_packet.len, uncomp_packet.time.sec);
+	for( size_t i=0 ; i<uncomp_packet.len ; i++ )
+	{
+		printf("%hhu ", uncomp_packet.data[i]);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
 	// getDiffTime(0);
 
 	/* check inputs validity */
@@ -543,9 +554,7 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 		c->profile->encode(c, &ip_pkt, rohc_buf_data(*rohc_packet),
 		                   rohc_buf_avail_len(*rohc_packet),
 		                   &packet_type, &payload_offset);
-
-	// printf("\nencode>>%d", getLDiffTime());
-
+	
 	if(rohc_hdr_size < 0)
 	{
 		/* error while compressing, use the Uncompressed profile
@@ -641,6 +650,17 @@ rohc_status_t rohc_compress4(struct rohc_comp *const comp,
 	c->total_last_compressed_size = rohc_packet->len;
 	c->header_last_uncompressed_size = payload_offset;
 	c->header_last_compressed_size = rohc_hdr_size;
+
+	//////////////////////////////////////////////////////////////////////////
+
+	printf(", rohc_len:%lu, hdr_len:%d, rohc_data:", rohc_packet->len, rohc_hdr_size);
+	for( size_t i=0 ; i<rohc_packet->len ; i++ )
+	{
+		printf("%hhu ", rohc_packet->data[i]);
+	}
+	printf("|\n");
+	
+	//////////////////////////////////////////////////////////////////////////
 
 	// printf("\nstat>>%d\n", getLDiffTime());
 

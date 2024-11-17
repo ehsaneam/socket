@@ -26,8 +26,8 @@
  * @author Didier Barvaux <didier.barvaux@toulouse.viveris.com>
  */
 
+#include <stdio.h>
 #include "c_tcp_dynamic.h"
-
 #include "c_tcp_defines.h"
 #include "rfc4996.h"
 #include "ip_numbers.h"

@@ -63,7 +63,7 @@ int initDecompressor(rohc_cid_type_t rohc_cid_type)
 	}
 
     /* Enable the decompression profiles you need */
-	if( !rohc_decomp_enable_profiles(decompressor, ROHC_PROFILE_UNCOMPRESSED, 
+	if( !rohc_decomp_enable_profiles(decompressor, ROHC_PROFILE_UNCOMPRESSED, ROHC_PROFILE_UDP,
                                 ROHC_PROFILE_IP, ROHC_PROFILE_TCP, -1) )
 	{
 		PRINT_ERR_ROHC("failed to enable the TCP/IP profile\n");

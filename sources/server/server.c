@@ -36,14 +36,40 @@ int main(int argc, char *argv[])
 
 void receivePackets()
 {
+    // char all_content[40*ETH_FRAME_LEN];
     char buffer[ETH_FRAME_LEN];
     char compressed_buffer[ETH_FRAME_LEN];
 
+    // FILE *fptr;
+    // fptr = fopen("/home/esi/Projects/RoHC_hardware/rohc_compress/resources/outputs", "r");
+    // fseek(fptr, 0, SEEK_END); // seek to end of file
+    // int all_content_size = ftell(fptr); // get current file pointer
+    // int seeker = 0;
+    // fseek(fptr, 0, SEEK_SET);
+    // fread(all_content, 1, all_content_size, fptr);
+    
+    // if( fptr==NULL )
+	// {
+	// 	PRINT_ERR_SOCK("***********************--->file nis\n");
+	// 	return;
+	// }
+
     while( true )
     {
+        // printf("%d\n", seeker);
         int bytes_compressed = receiveRaw(compressed_buffer, sizeof(compressed_buffer));
+        // char *end_of_packet = find_str(all_content + seeker, "Hello, Server!", all_content_size-seeker);
+        // if( end_of_packet== NULL || all_content_size<=seeker )
+        // {
+            // printf("tamum shod\n");
+            // break;
+        // }
+        // int bytes_compressed = (end_of_packet + 1) - (all_content + seeker);
+        // memcpy(compressed_buffer, all_content + seeker, bytes_compressed);
         // dumpPacket((unsigned char*)compressed_buffer+ETH_HDR_LEN, 
         //             bytes_compressed-ETH_HDR_LEN, "compressed buffer");
+        // dumpPacket((unsigned char*)compressed_buffer, 
+        //             bytes_compressed, "compressed buffer");
 
         PRINT_INFO_SOCK("--------------------\n");
         // Extract the Ethernet frame header
@@ -52,6 +78,11 @@ void receivePackets()
         int bytes_read = decompressPacket((unsigned char*)compressed_buffer + ETH_HDR_LEN, 
                                         bytes_compressed - ETH_HDR_LEN,
                                         (unsigned char*)buffer);
+        // int bytes_read = decompressPacket((unsigned char*)compressed_buffer, 
+        //                                 bytes_compressed, (unsigned char*)buffer);
+        // printf("%d\n", bytes_read);
+
+
         packet_cntr++;
         if( bytes_read==DECOMP_FAILED )
         {
@@ -84,7 +115,9 @@ void receivePackets()
             extractUdp(buffer + ip_header_length,
                 bytes_read - ip_header_length, ip_header);
         }
+        //seeker += bytes_compressed + 1;
     }
+    //fclose(fptr);
 }
 
 void initServer()
@@ -205,4 +238,26 @@ void setVerbose(int verbose_level)
 {
     setRohcVerbose(verbose_level);
     verbose = verbose_level;
+}
+
+char* find_str(char *phrase, char *word, int total_size)
+{
+    int word_size = strlen(word);
+    int match_num = 0;
+    for( int i=0 ; i<total_size ; i++ )
+    {
+        if( phrase[i]==word[match_num] )
+        {
+            match_num++;
+            if( match_num==word_size )
+            {
+                return (phrase + i);
+            }
+        }
+        else
+        {
+            match_num = 0;
+        }
+    }
+    return NULL;
 }

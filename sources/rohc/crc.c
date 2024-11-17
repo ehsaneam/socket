@@ -35,6 +35,7 @@
 #include "ipv4.h"
 #include "udp.h"
 #include "tcp.h"
+#include "stdio.h"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -324,7 +325,6 @@ static inline uint8_t crc_calc_7(const uint8_t *const buf,
 	{
 		crc = crc_table[buf[i] ^ (crc & 127)];
 	}
-
 	return crc;
 }
 

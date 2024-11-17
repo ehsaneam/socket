@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     for( int i=0 ; i<40 ; i++ )
     {
         generatePacket(packet_spec);
-        printPacket(packet_spec, i);
+        // printPacket(packet_spec, i);
         sendPacket(packet_spec);
         usleep(20);
     }
@@ -92,7 +92,7 @@ void sendPacket(Sc_packetSpec *packet_spec)
     // printf("packet compressed, %d -> %ld\n", 
     //         total_packet_len, comp_ret+ETH_HDR_LEN);
 
-    printf("%d,%ld\n", total_packet_len, comp_ret+ETH_HDR_LEN);
+    // printf("%d,%ld\n", total_packet_len, comp_ret+ETH_HDR_LEN);
 
     total_packet_len = comp_ret+ETH_HDR_LEN;
     if( !packet_spec->blocked )
@@ -389,6 +389,8 @@ void printPacket(Sc_packetSpec *packet_spec, int i)
             packet_spec->seq, packet_spec->ack_seq,
             rsfFlagToString(packet_spec->rsf_flag), packet_spec->ack_flag,
             packet_spec->payload, stateToString(packet_spec->blocked));
+    assert(packet_spec!=NULL);
+    assert(i>=0);
 }
 
 void setVerbose(int verbose_level)
