@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
@@ -11,6 +12,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <netinet/if_ether.h>
+#include <netinet/ip.h>
 #include <linux/if_packet.h>
 #include <net/ethernet.h>
 #include <arpa/inet.h>
@@ -18,8 +21,21 @@
 #include "tcp.h"
 #include "udp.h"
 
-#define SOCKET_INTERFACE    "lo"
+#define DBG_INFO        3
+#define DBG_WARNING     2
+#define DBG_ERROR       1
+
+#define BUFFER_SIZE     2048
+
 #define SOCKET_PORT         12345
+
+#define DEST_MAC_ADDR       "\x70\x4D\x7B\x63\x2F\x8D"  // Destination MAC address
+#define SRC_MAC_ADDR        "\x00\x0A\x35\x00\x00\x00"  // Source MAC address
+#define DEST_IP_ADDR        "192.168.75.204"                           // Destination IP address
+#define SRC_IP_ADDR         "192.168.75.194"                           // Source IP address
+#define IP_HDR_LEN              sizeof(struct iphdr)
+#define TCP_HDR_LEN             sizeof(struct tcphdr)
+#define UDP_HDR_LEN             sizeof(struct udphdr)
 
 #define RANDOM_PACKETS  0
 #define DUMP_PACKETS    1

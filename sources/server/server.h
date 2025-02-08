@@ -5,6 +5,7 @@
 #include "header_decomp.h"
 
 #define READ_SOCKET_FAILED  -1
+#define SOCKET_SERVER_INTERFACE    "enp6s0"
 
 void receivePackets();
 void initServer();

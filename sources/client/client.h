@@ -5,13 +5,7 @@
 #include "common.h"
 #include "header_comp.h"
 
-#define DEST_MAC_ADDR       {0x00, 0x11, 0x22, 0x33, 0x44, 0x55}  // Destination MAC address
-#define SRC_MAC_ADDR        {0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB}  // Source MAC address
-#define DEST_IP_ADDR        "127.0.0.1"                           // Destination IP address
-#define SRC_IP_ADDR         "127.0.0.1"                           // Source IP address
-#define IP_HDR_LEN              sizeof(struct iphdr)
-#define TCP_HDR_LEN             sizeof(struct tcphdr)
-#define UDP_HDR_LEN             sizeof(struct udphdr)
+#define SOCKET_CLIENT_INTERFACE    "eth1"
 
 typedef struct Sc_packetSpec
 {

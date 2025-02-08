@@ -221,8 +221,8 @@ struct iphdr* constructIpHeader(char *buffer, Sc_packetSpec *packet_spec)
 struct ether_header* constructEthHeader(char *buffer)
 {
     struct ether_header *eth_header = (struct ether_header*)buffer;
-    memcpy(eth_header->ether_dhost, (unsigned char[])DEST_MAC_ADDR, 6);
-    memcpy(eth_header->ether_shost, (unsigned char[])SRC_MAC_ADDR, 6);
+    memcpy(eth_header->ether_dhost, DEST_MAC_ADDR, 6);
+    memcpy(eth_header->ether_shost, SRC_MAC_ADDR, 6);
     eth_header->ether_type = htons(ETH_P_IP);
     return eth_header;
 }
@@ -238,12 +238,10 @@ void openSocket()
     }
 
     // Set up sockaddr_ll
-    sa.sll_family = AF_PACKET;
-    sa.sll_protocol = htons(ETH_P_ALL);
-    sa.sll_ifindex = if_nametoindex(SOCKET_INTERFACE);
+    sa.sll_ifindex = if_nametoindex(SOCKET_CLIENT_INTERFACE);
 
     // Set destination MAC address
-    memcpy(sa.sll_addr, (unsigned char[])DEST_MAC_ADDR, 6);
+    memcpy(sa.sll_addr, DEST_MAC_ADDR, 6);
     sa.sll_halen = htons(6);
 }
 
@@ -304,37 +302,77 @@ int inCksum(unsigned short *addr, int len)
     return answer;
 }
 
-uint16_t ip_fast_csum(const uint8_t *iph, const size_t ihl)
+uint16_t ip_fast_csum(const uint8_t *const iph, const size_t ihl)
 {
-	uint32_t __ihl = ihl;
-	uint32_t sum;
+	const uint8_t *buff = iph;
+	size_t len = ihl * 4;
+	bool odd;
+	size_t count;
+	uint32_t result = 0;
 
-	__asm__ __volatile__(
-	   " \n\
-       movl (%1), %0      \n\
-       subl $4, %2		\n\
-       jbe 2f		\n\
-       addl 4(%1), %0	\n\
-       adcl 8(%1), %0	\n\
-       adcl 12(%1), %0	\n\
-1:     adcl 16(%1), %0	\n\
-       lea 4(%1), %1	\n\
-       decl %2		\n\
-       jne 1b		\n\
-       adcl $0, %0		\n\
-       movl %0, %2		\n\
-       shrl $16, %0	\n\
-       addw %w2, %w0	\n\
-       adcl $0, %0		\n\
-       notl %0		\n\
-2:     \n\
-       "
-	   /* Since the input registers which are loaded with iph and ihl
-	      are modified, we must also specify them as outputs, or gcc
-	      will assume they contain their original values. */
-		: "=r" (sum), "=r" (iph), "=r" (__ihl)
-		: "1" (iph), "2" (__ihl)
-		: "memory");
+	if(len == 0)
+	{
+		return ~result;
+	}
+	odd = 1 & (uintptr_t) buff;
+	if(odd)
+	{
+#ifdef __LITTLE_ENDIAN
+		result = *buff;
+#else
+		result += (*buff << 8);
+#endif
+		len--;
+		buff++;
+	}
+	count = len >> 1; /* nr of 16-bit words.. */
+	if(count)
+	{
+		if(2 & (uintptr_t) buff)
+		{
+			result += *(uint16_t *) buff;
+			count--;
+			len -= 2;
+			buff += 2;
+		}
+		count >>= 1; /* nr of 32-bit words.. */
+		if(count)
+		{
+			uint32_t carry = 0;
+			do
+			{
+				uint32_t word = *(uint32_t *) buff;
+				count--;
+				buff += sizeof(uint32_t);
+				result += carry;
+				result += word;
+				carry = (word > result);
+			}
+			while(count);
+			result += carry;
+			result = (result & 0xffff) + (result >> 16);
+		}
+		if(len & 2)
+		{
+			result += *(uint16_t *) buff;
+			buff += 2;
+		}
+	}
+	if(len & 1)
+	{
+#ifdef __LITTLE_ENDIAN
+		result += *buff;
+#else
+		result += (*buff << 8);
+#endif
+	}
+	result = from32to16(result);
+	if(odd)
+	{
+		result = ((result >> 8) & 0xff) | ((result & 0xff) << 8);
+	}
+	return ~result;
+}
 
 	return (uint16_t) (sum & 0xffff);
 }

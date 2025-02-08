@@ -82,7 +82,6 @@ void receivePackets()
         //                                 bytes_compressed, (unsigned char*)buffer);
         // printf("%d\n", bytes_read);
 
-
         packet_cntr++;
         if( bytes_read==DECOMP_FAILED )
         {
@@ -95,7 +94,26 @@ void receivePackets()
         // dumpPacket((unsigned char*)buffer, bytes_read, "buffer");
 
         // Extract the IP packet from the received Ethernet frame
-        struct iphdr *ip_header = (struct iphdr*)buffer;
+        struct ethhdr *eth = (struct ethhdr *)buffer;
+        if( memcmp(eth->h_dest, DEST_MAC_ADDR, 6) )
+        {
+            continue;
+        }
+        if( memcmp(eth->h_source, SRC_MAC_ADDR, 6) )
+        {
+            continue;
+        }
+
+	struct iphdr *ip_header = (struct iphdr*)(buffer + ETH_HDR_LEN);
+        if( ip_header->saddr!=inet_addr(SRC_IP_ADDR) )
+        {
+            continue;
+        }
+
+        if( ip_header->daddr!=inet_addr(DEST_IP_ADDR) )
+        {
+            continue;
+        }
         unsigned short protocol = ip_header->protocol;
         int ip_header_length = ip_header->ihl * 4;
 
@@ -107,12 +125,12 @@ void receivePackets()
 
         if( protocol==IPPROTO_TCP )
         {
-            extractTcp(buffer + ip_header_length,
+            extractTcp((char *)(buffer + ETH_HDR_LEN + ip_header_length),
                 bytes_read - ip_header_length, ip_header);
         }
         else if( protocol==IPPROTO_UDP )
         {
-            extractUdp(buffer + ip_header_length,
+            extractUdp((char *)(buffer + ETH_HDR_LEN + ip_header_length),
                 bytes_read - ip_header_length, ip_header);
         }
         //seeker += bytes_compressed + 1;
@@ -204,14 +222,15 @@ void openSocket()
     sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     if( sockfd==-1 )
     {
-        PRINT_ERR_SOCK("Socket creation failed");
+        PRINT_ERR_SOCK("Socket creation failed, Couldn't open device "
+            SOCKET_SERVER_INTERFACE);
         exit(EXIT_FAILURE);
     }
 
     // Set up sockaddr_ll
     sa.sll_family = AF_PACKET;
     sa.sll_protocol = htons(ETH_P_ALL);
-    sa.sll_ifindex = if_nametoindex(SOCKET_INTERFACE);
+    sa.sll_ifindex = if_nametoindex(SOCKET_SERVER_INTERFACE);
 
     // Bind socket to the interface
     if( bind(sockfd, (struct sockaddr*)&sa, sizeof(sa))==-1 )
